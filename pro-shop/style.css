@@ -1,0 +1,1319 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #1c2024;
+  --muted: #6b7280;
+  --line: #e3e6ea;
+  --accent: #1f6feb;
+  --accent-soft: #e8f0fe;
+  --warn: #b45309;
+  --warn-soft: #fef3c7;
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+  --danger: #b91c1c;
+  --radius: 6px;
+  --headerh: 49px;   /* height of the sticky page header */
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+}
+
+/* ---------- chrome ---------- */
+
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+header h1 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0;
+  padding: 14px 0;
+  white-space: nowrap;
+}
+
+nav { display: flex; gap: 4px; }
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 14px 10px;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+
+nav a:hover { color: var(--ink); }
+
+nav a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+main { padding: 16px; }
+
+/* ---------- toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.spacer { flex: 1; }
+
+input, select, textarea, button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="text"], input[type="search"], input[type="date"],
+input[type="number"], input[type="time"], select, textarea {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+
+#search { min-width: 240px; flex: 1; max-width: 380px; }
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:hover { background: #f0f2f5; }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover { background: #1a5fd0; }
+
+button:disabled { opacity: .5; cursor: default; }
+
+.count { color: var(--muted); font-size: 13px; }
+
+/* ---------- table ---------- */
+
+/* overflow-x makes this the scroll container for BOTH axes, which also makes
+   it the containing block for the sticky <th>. So the table scrolls inside
+   its own pane and the header sticks to the top of that pane. Offsetting the
+   header by the page-header height instead would push it *down* into the
+   first row. */
+.tablewrap {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: auto;
+  max-height: calc(100vh - var(--headerh) - 90px);
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+
+th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  background: var(--panel);
+  position: sticky;
+  top: 0;              /* sticks to the top of .tablewrap, its scrollport */
+  z-index: 10;
+}
+
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+tbody tr:hover { background: #fafbfc; }
+tbody tr.selected { background: var(--accent-soft); }
+
+/* The whole point of the page: work that has not been placed yet. */
+tbody tr.pending { background: var(--warn-soft); }
+tbody tr.pending:hover { filter: brightness(.98); }
+
+/* Deliberately not sticky. It is a section divider, not a running header --
+   and a second sticky layer below the sticky <th> paints straight over the
+   first row of the group, which is exactly the row that matters most. */
+.grouprow td {
+  background: #eef1f4;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+}
+
+.col-item { min-width: 220px; }
+.col-name { min-width: 130px; }
+.col-notes { min-width: 160px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+
+/* ---------- inline editing ---------- */
+
+.cell {
+  min-height: 20px;
+  cursor: text;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: -1px -3px;
+}
+
+.cell:hover { background: #eef1f4; }
+.cell.empty::after { content: "—"; color: #c3c8ce; }
+
+.cell input, .cell select {
+  width: 100%;
+  padding: 1px 3px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+}
+
+.saving { opacity: .5; }
+.saveerr { outline: 2px solid var(--danger); }
+
+/* ---------- badges ---------- */
+
+.badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.pending { background: var(--warn-soft); color: var(--warn); }
+.badge.ordered { background: var(--accent-soft); color: var(--accent); }
+.badge.done    { background: var(--ok-soft);   color: var(--ok); }
+.badge.flag    { background: #fde8e8; color: var(--danger); }
+.badge.fitting { background: #ede9fe; color: #6d28d9; }
+
+.stock { color: var(--muted); font-style: italic; }
+
+/* ---------- bulk bar ---------- */
+
+.bulkbar {
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, .08);
+  padding: 10px 12px;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  z-index: 20;
+}
+
+.bulkbar strong { white-space: nowrap; }
+.bulkbar input, .bulkbar select { width: 130px; }
+
+.hidden { display: none !important; }
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.error {
+  background: #fde8e8;
+  border: 1px solid #f5b5b5;
+  color: var(--danger);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+
+/* ---------- calendar ---------- */
+
+.calhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.calhead h2 {
+  font-size: 17px;
+  margin: 0;
+  min-width: 165px;
+  font-weight: 650;
+}
+
+.cal {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.calgrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calgrid .dow {
+  padding: 7px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.day {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  min-height: 108px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.day:nth-child(7n + 7) { border-right: 0; }
+.day:hover { background: #fafbfc; }
+.day.outside { background: #fbfcfd; }
+.day.outside .daynum { color: #c3c8ce; }
+
+.daynum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 1px 3px;
+  align-self: flex-start;
+}
+
+.day .appts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The grid supplies the weekday; the agenda layout on phones does not. */
+.daynum .dfull { display: none; }
+
+/* Required: the current day has to be obvious at a glance. */
+.day.today { background: var(--accent-soft); }
+
+.day.today .daynum {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 19px;
+  text-align: center;
+}
+
+.appt {
+  font-size: 11.5px;
+  line-height: 1.25;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border-left: 3px solid var(--muted);
+  background: #f2f4f7;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appt:hover { filter: brightness(.95); }
+.appt .t { font-weight: 600; }
+
+/* Location at a glance -- the shop runs two houses. */
+.appt.valley { border-left-color: var(--accent); background: var(--accent-soft); }
+.appt.south  { border-left-color: var(--warn);   background: var(--warn-soft); }
+
+.appt.done { opacity: .55; }
+.appt.done .n { text-decoration: line-through; }
+
+.legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.legend span { display: flex; align-items: center; gap: 5px; }
+
+.swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  border-left: 3px solid;
+}
+
+.swatch.valley { border-left-color: var(--accent); background: var(--accent-soft); }
+.swatch.south  { border-left-color: var(--warn);   background: var(--warn-soft); }
+
+/* ---------- new order form ---------- */
+
+.formcard {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-width: 640px;
+}
+
+.modeswitch {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+  max-width: 640px;
+}
+
+.modeswitch button {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  padding: 9px 12px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.modeswitch button + button { border-left: 1px solid var(--line); }
+.modeswitch button:hover { background: #f0f2f5; }
+
+.modeswitch button.on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.formgrid { display: grid; gap: 12px; }
+
+.formgrid label {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.formgrid label .req { color: var(--danger); }
+
+.formgrid input, .formgrid select, .formgrid textarea {
+  font-size: 15px;          /* 16px-ish keeps iOS from zooming on focus */
+  color: var(--ink);
+  padding: 8px 10px;
+}
+
+.formgrid textarea { resize: vertical; min-height: 54px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.formactions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.saved {
+  margin-top: 20px;
+  max-width: 640px;
+}
+
+.saved h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  margin: 0 0 7px;
+}
+
+.savedrow {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 7px 11px;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.savedrow .who { font-weight: 600; }
+.savedrow .it { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.savedrow button { padding: 2px 8px; font-size: 12px; }
+
+.ok {
+  background: var(--ok-soft);
+  border: 1px solid #a7e0bd;
+  color: var(--ok);
+  padding: 9px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  max-width: 640px;
+}
+
+@media (max-width: 620px) {
+  .pair { grid-template-columns: 1fr; }
+  .formactions button { flex: 1; }
+}
+
+/* ---------- week picker ---------- */
+
+.weeknav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.weeknav .label {
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 150px;
+}
+
+.weekstrip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.wday {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 5px 2px 6px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--panel);
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wday:hover { background: #f0f2f5; }
+
+.wday .wd-dow {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.wday .wd-num { font-size: 15px; font-weight: 600; }
+
+.wday .wd-count {
+  font-size: 10.5px;
+  color: var(--muted);
+  min-height: 13px;
+}
+
+.wday.today { border-color: var(--accent); }
+
+.wday.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.wday.selected .wd-dow,
+.wday.selected .wd-count { color: rgba(255, 255, 255, .85); }
+
+.wday.busy .wd-count { color: var(--warn); font-weight: 600; }
+.wday.selected.busy .wd-count { color: #fff; }
+
+/* No max-height: the busiest day in the shop's history is six appointments,
+   which fits. A scrollbar here would hide exactly the information the picker
+   exists to show. */
+.dayappts {
+  margin-top: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fafbfc;
+}
+
+.dayappts .none, .stafflist .none {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dayrow {
+  display: flex;
+  gap: 8px;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.dayrow:last-child { border-bottom: 0; }
+
+.dayrow .t {
+  font-weight: 600;
+  flex: 0 0 46px;
+}
+
+.dayrow .who {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Service notes run long ("Eval. New bowler no thumb. 15. Discussed ...") and
+   would otherwise squeeze the name down to "Dylan...". Capped, so the name
+   keeps the majority of the row -- it is what you scan the list for. */
+.dayrow .svc {
+  color: var(--muted);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dayrow .loc {
+  font-size: 10.5px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+  flex: 0 0 auto;      /* never let the location badge get cut in half */
+}
+
+.dayrow .loc.south { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- dialog ---------- */
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0;
+  width: min(430px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .18);
+  color: var(--ink);
+}
+
+dialog::backdrop { background: rgba(0, 0, 0, .35); }
+
+dialog h3 {
+  margin: 0;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+}
+
+dialog.wide { width: min(580px, calc(100vw - 24px)); }
+
+dialog .body {
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+  overflow-x: hidden;
+}
+
+/* Grid children default to min-width:auto, so one wide row -- a long service
+   description -- refuses to shrink and stretches the whole dialog, which
+   clips the last day off the week strip. */
+dialog .body > * { min-width: 0; }
+
+/* Who this is for, above the picker. */
+.forwhom {
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.forwhom .nm, .forwhom .it {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forwhom .nm { font-weight: 650; }
+.forwhom .it { color: var(--muted); }
+
+dialog label {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+dialog label input, dialog label select, dialog label textarea {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+dialog textarea { resize: vertical; min-height: 58px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+dialog .foot {
+  padding: 11px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #fafbfc;
+}
+
+.checkline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+button.danger { color: var(--danger); border-color: #f0c0c0; }
+button.danger:hover { background: #fdf0f0; }
+
+/* ---------- phone ---------- */
+
+@media (max-width: 760px) {
+  main { padding: 10px; }
+  header { gap: 10px; }
+  header h1 { font-size: 14px; }
+  #search { min-width: 0; }
+
+  /* The grid stops being readable well before this width, so each order
+     becomes a card instead. */
+  .tablewrap { border: 0; background: none; overflow: visible; max-height: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+
+  tbody tr {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 8px 10px;
+  }
+
+  tbody tr.pending { border-left: 4px solid var(--warn); }
+
+  td {
+    border: 0;
+    padding: 2px 0;
+    display: flex;
+    gap: 8px;
+  }
+
+  td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    min-width: 92px;
+    flex-shrink: 0;
+  }
+
+  /* Right-alignment is for the grid's number columns. In card layout it
+     just shoves the label away from its value. */
+  .num { text-align: left; }
+
+  td:empty { display: none; }
+  .grouprow td { position: static; }
+  .bulkbar input, .bulkbar select { width: 100%; }
+
+  /* The nav must not push "New Order" off the edge of a phone. */
+  header { overflow-x: auto; }
+  nav a { padding: 14px 8px; }
+
+  /* A 7-column month grid on a 375px screen gives each day ~50px, which
+     cannot hold a name. Days become a scrollable agenda list instead, and
+     empty days drop out entirely. */
+  .calgrid { display: block; }
+  .calgrid .dow { display: none; }
+
+  .day {
+    border-right: 0;
+    min-height: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 9px;
+  }
+
+  /* Empty days are noise in an agenda -- except today, which has to stay
+     visible and marked even when nothing is booked. */
+  .day.outside, .day.empty-day:not(.today) { display: none; }
+
+  .day.today.empty-day .appts::before {
+    content: "Nothing booked today";
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .daynum {
+    min-width: 68px;
+    font-size: 12.5px;
+    padding-top: 2px;
+  }
+
+  .daynum .dnum { display: none; }
+  .daynum .dfull { display: inline; }
+
+  .day.today .daynum {
+    border-radius: 4px;
+    min-width: 68px;
+    padding: 2px 5px;
+  }
+
+  .day .appts { flex: 1; gap: 3px; }
+  .appt { white-space: normal; font-size: 13px; padding: 4px 6px; }
+  .row2 { grid-template-columns: 1fr; }
+}
+
+/* ---------- order provenance ---------- */
+
+/* The second line under a date or a due date: the time it came in, how long
+   it has waited, how late it is. Muted, so the value above it stays the thing
+   the eye lands on. */
+.sub { color: var(--muted); font-size: 12px; }
+.sub.overdue { color: var(--danger); font-weight: 600; }
+.sub.duetoday { color: var(--warn); font-weight: 600; }
+
+/* Where an order came from. Four muted colours rather than four loud ones --
+   this column is answering "which route was this?", not raising an alarm. */
+.badge.src { font-weight: 600; }
+.badge.src-web    { background: var(--accent-soft); color: var(--accent); }
+.badge.src-form   { background: #ede9fe; color: #6d28d9; }
+.badge.src-shop   { background: #f1f3f5; color: #495057; }
+.badge.src-import { background: #f8f9fa; color: #868e96; border: 1px solid var(--line); }
+
+/* ---------- assignment ---------- */
+
+/* A bare select inside a table cell. Borderless until hovered, so a column of
+   them reads as text rather than as a wall of controls. */
+select.assign {
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 3px;
+  padding: 1px 3px;
+  max-width: 130px;
+  font-size: 13px;
+}
+
+select.assign:hover { border-color: var(--line); background: var(--panel); }
+select.assign:focus { border-color: var(--accent); background: var(--panel); }
+select.assign:disabled { opacity: .5; }
+
+/* ---------- tickets ---------- */
+
+/* A button that is a link. Nav-adjacent actions in the toolbar have to line
+   up with the real buttons beside them. */
+.btnlink {
+  display: inline-block;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-weight: 500;
+  text-decoration: none;
+  color: inherit;
+}
+.btnlink:hover { background: #f0f2f5; }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  border: 0;
+  background: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 14px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tab:hover { background: none; color: var(--ink); }
+.tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+.pill {
+  background: #eef1f4;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.tab.on .pill { background: var(--accent-soft); color: var(--accent); }
+
+/* Cards, not a table. A ticket is a paragraph of prose from a colleague plus
+   two decisions -- laying that out in columns would give the details a 90px
+   box and the priority a whole one. */
+.ticketlist {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  align-items: start;
+}
+
+.ticket {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.ticket.urgent { border-left: 4px solid var(--danger); }
+.ticket.late   { border-left: 4px solid var(--warn); }
+.ticket.st-done { opacity: .62; }
+
+.thead {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.ttitle { font-weight: 650; flex: 1; min-width: 0; }
+
+.tdetails {
+  margin: 6px 0 0;
+  color: #46505c;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.tmeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tmeta .due.late  { color: var(--danger); font-weight: 600; }
+.tmeta .due.today { color: var(--warn); font-weight: 600; }
+
+.tfoot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.tfoot { flex-wrap: wrap; }
+.tfoot .assign { flex: 1; min-width: 120px; max-width: none; border-color: var(--line); background: var(--panel); }
+.tfoot .plugbtn { background: #fff7e6; border-color: #f0c36d; color: #8a5a00; font-weight: 600; }
+.tfoot .plugbtn:hover { background: #ffefcc; }
+
+/* Plug work state on a ticket card. */
+.badge.plug            { background: #fff7e6; color: #8a5a00; }
+.badge.plug-at_keiths  { background: #ede9fe; color: #6d28d9; }
+.badge.plug-plugged    { background: var(--ok-soft); color: var(--ok); }
+.tmeta .booked { color: var(--accent); font-weight: 600; }
+.tfoot button { font-size: 12.5px; padding: 4px 9px; }
+
+.ticketdetails {
+  background: #f6f7f9;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  white-space: pre-wrap;
+  font-size: 13px;
+  max-height: 190px;
+  overflow: auto;
+}
+
+.ticketdetails.muted { color: var(--muted); font-style: italic; }
+
+.badge.pri-urgent { background: #fde8e8; color: var(--danger); }
+.badge.pri-high   { background: var(--warn-soft); color: var(--warn); }
+.badge.pri-normal { background: #eef1f4; color: var(--muted); }
+.badge.pri-low    { background: #f8f9fa; color: #9aa3ad; }
+
+.badge.stat-new         { background: var(--accent-soft); color: var(--accent); }
+.badge.stat-assigned    { background: #ede9fe; color: #6d28d9; }
+.badge.stat-in_progress { background: var(--warn-soft); color: var(--warn); }
+.badge.stat-blocked     { background: #fde8e8; color: var(--danger); }
+.badge.stat-done        { background: var(--ok-soft); color: var(--ok); }
+
+/* ---------- staff roster editor ---------- */
+
+.stafflist { display: grid; gap: 6px; margin-bottom: 10px; }
+
+.staffrow { display: flex; gap: 6px; align-items: center; }
+.staffrow input { flex: 1; min-width: 0; }
+
+/* Square nudges, sized to sit beside the name without competing with it. */
+.staffrow .ord {
+  padding: 4px 0;
+  width: 28px;
+  text-align: center;
+  line-height: 1;
+  font-size: 13px;
+  flex: none;
+}
+
+/* Retired, not gone. Still readable, visibly out of the running. */
+.staffrow.off input { color: var(--muted); text-decoration: line-through; }
+
+.addstaff { display: flex; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.addstaff input { flex: 1; }
+
+/* ---------- ticket intake page ---------- */
+
+/* Deliberately no nav: this page is bookmarked by people who have no business
+   in the order book. */
+header.slim { justify-content: flex-start; }
+header.slim .tag {
+  color: var(--muted);
+  font-size: 13px;
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+}
+
+main.narrow { max-width: 620px; margin: 0 auto; }
+
+.lede { color: var(--muted); margin: 0 0 14px; }
+.dialog .lede, dialog .lede { font-size: 12.5px; margin-bottom: 12px; }
+
+/* A hint inside a field label -- says what the field is for without turning
+   into a second line of chrome. */
+.opt { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+.footlink { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 22px; }
+.footlink a { color: var(--muted); }
+
+.checkrow { display: flex; gap: 20px; }
+
+/* ---------- appointment chips: owner and money ---------- */
+
+/* Initials, pushed to the right of the chip. Two characters is all a month
+   cell can spare and all the shop's handful of people need. */
+.appt .who {
+  float: right;
+  opacity: .72;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  padding-left: 4px;
+}
+
+/* An unpaid job carries a dot. Quiet enough to ignore on a full month, there
+   when you are looking for it. */
+.appt.unpaid::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--warn);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+@media (max-width: 760px) {
+  .ticketlist { grid-template-columns: 1fr; }
+  .checkrow { gap: 14px; }
+  select.assign { max-width: none; width: 100%; border-color: var(--line); background: var(--panel); }
+}
+
+/* ---------- weekly hours confirmation ---------- */
+
+/* Wider than the other dialogs on purpose: two locations by seven days is the
+   whole point, and a week you have to scroll through is a week you skim. */
+dialog.hoursdlg { width: min(860px, calc(100vw - 24px)); }
+
+dialog.hoursdlg > h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The X. Every other dialog here cancels from the footer, but this one is the
+   first thing a Sunday morning shows you, so the way out is where the eye
+   already looks for it. */
+.xclose {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.xclose:hover { color: var(--ink); background: none; }
+
+dialog.hoursdlg .body { max-height: min(62vh, 560px); overflow-y: auto; }
+
+.hoursgrid {
+  display: grid;
+  /* minmax(0, ...) rather than 1fr: a plain 1fr will not shrink below its
+     inputs' natural width, so the second location ran off the right edge. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 22px;
+}
+
+.hloc, .hfields, .hextra > * { min-width: 0; }
+
+.hloc h4 {
+  margin: 0 0 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+.hrow {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.hrow:last-child { border-bottom: none; }
+
+.hday { padding-top: 6px; }
+.hday .hd { display: block; font-size: 12.5px; font-weight: 600; }
+.hday .hdate { display: block; font-size: 11.5px; color: var(--accent); }
+
+.htimes { display: flex; align-items: center; gap: 5px; }
+.htimes input { flex: 1; min-width: 0; }
+.hdash { color: var(--muted); flex: 0 0 auto; }
+
+.hmore {
+  flex: 0 0 auto;
+  width: 24px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* The note and the second opening. Hidden until a day needs them -- most days
+   do not, and seven days of empty boxes is what makes people stop reading. */
+.hextra { display: none; margin-top: 5px; }
+.hextra input { width: 100%; }
+.hextra.open { display: grid; gap: 5px; }
+
+.hstatus { font-size: 12.5px; color: var(--muted); }
+.hstatus.ok   { color: var(--ok); }
+.hstatus.warn { color: var(--warn); }
+.hstatus.bad  { color: var(--danger); }
+
+@media (max-width: 760px) {
+  .hoursgrid { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .hloc + .hloc { margin-top: 14px; }
+}
+
+/* ---------- new order dialog ---------- */
+
+/* Direct child only -- the "Added just now" heading below is also an h3 and
+   must not turn into a second title bar. */
+dialog#orderdlg > h3 { display: flex; align-items: center; gap: 8px; }
+
+dialog#orderdlg .body { max-height: min(66vh, 600px); overflow-y: auto; }
+
+/* The form fills the dialog; the standalone page's 640px cap was for a page. */
+dialog#orderdlg .modeswitch { max-width: none; margin-bottom: 4px; }
+dialog#orderdlg .saved { max-width: none; margin-top: 6px; }
+
+/* `dialog h3` is the title bar rule -- padding and a bottom border. A heading
+   inside the body is a label, not a title. */
+dialog .saved h3 { padding: 0; border-bottom: none; }
+
+/* Comma-split preview under the item box. */
+.splitnote {
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 11px;
+  font-size: 13px;
+  margin-top: -6px;
+}
+.splitnote ul { margin: 5px 0 6px; padding-left: 20px; }
+.formgrid .splitnote label.keepone {
+  display: flex; gap: 6px; align-items: center;
+  font-weight: 400; font-size: 12.5px;
+}
+.formgrid .splitnote label.keepone input { padding: 0; }
+
+/* ---------- hours: the two week tabs ---------- */
+
+.weektabs {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.weektabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 12px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.weektabs button + button { border-left: 1px solid var(--line); }
+.weektabs button:hover { background: #f0f2f5; }
+.weektabs button.on { background: var(--accent); color: #fff; }
+
+/* The dates, under the tab name. Dimmed on the selected tab rather than a
+   different colour -- white-on-blue at 11px is already loud enough. */
+.weektabs button span {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: .75;
+}
+
+/* Today, so a Thursday being fixed on Thursday is findable at a glance. */
+.hrow.istoday { background: var(--accent-soft); border-radius: var(--radius); }
+.hrow.istoday .hday .hdate { color: var(--accent); font-weight: 600; }
+
+.hempty {
+  padding: 18px 4px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Drilling list prepared for a group chat. */
+#exportdlg .body { max-height: 65vh; overflow-y: auto; }
+#exportdlg .foot { flex-wrap: wrap; }
+#export_status, #export_empty { margin: 0; color: var(--muted); font-size: 13px; }
+.export-list { border: 1px solid var(--line); border-radius: 5px; }
+.export-list:empty { display: none; }
+.export-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; }
+.export-row + .export-row { border-top: 1px solid var(--line); }
+.export-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.export-row button { flex-shrink: 0; min-width: 36px; min-height: 36px; font-size: 20px; }
+.export-notice:not(:empty) { padding: 10px 12px; margin-bottom: 10px; background: #e8f5eb; color: #185b2b; border-radius: 5px; }
+
+/* Shared name / phone lookup stays inside the form and dialog. */
+.customer-picker { position: relative; min-width: 0; }
+.customer-picker input { width: 100%; box-sizing: border-box; }
+.customer-options { max-height: 220px; overflow-y: auto; border: 1px solid #aaa; background: #fff; color: #222; border-radius: 4px; margin-top: 4px; }
+.customer-options [role="option"] { padding: 10px 12px; cursor: pointer; font-weight: normal; overflow-wrap: anywhere; }
+.customer-options [role="option"]:hover,
+.customer-options [aria-selected="true"] { background: #e8eef4; }
+.customer-hint { display: block; font-weight: normal; margin-top: 4px; }
+.customer-hint:empty { display: none; }
+
+.badge.received { background: #e1efe5; color: #24583a; }
+td[data-label="Status"] .badge { display: inline-block; margin: 2px 4px 2px 0; }
+
+/* ---------- what's new ---------- */
+
+/* Pinned to the right end of the header; whats-new.js adds it. */
+.whatsnew {
+  margin-left: auto;
+  flex-shrink: 0;
+  position: relative;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.whatsnew:hover { color: var(--ink); }
+
+/* Dot until this browser has opened the newest version. */
+.whatsnew.unseen::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+dialog.whatsnewdlg > h3 { display: flex; align-items: center; gap: 8px; }
+dialog.whatsnewdlg .body { max-height: min(66vh, 560px); overflow-y: auto; gap: 14px; }
+dialog.whatsnewdlg h4 { margin: 0 0 4px; font-size: 13.5px; }
+dialog.whatsnewdlg h4 .when { color: var(--muted); font-weight: 400; margin-left: 8px; }
+dialog.whatsnewdlg ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+
+/* On a phone the nav already runs off the right edge, so the button sits
+   next to the shop name instead, where it can still be seen. */
+@media (max-width: 760px) {
+  .whatsnew { margin-left: 0; order: 1; }
+  header nav { order: 2; }
+}

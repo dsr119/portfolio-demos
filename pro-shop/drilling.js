@@ -1,0 +1,821 @@
+// Drilling queue.
+//
+// Customer orders waiting to be drilled: shop stock excluded, and only rows
+// that carry a customer name. Unfinished work from this quarter and the last
+// one always shows, whatever the quarter picker says -- a ball ordered on
+// September 28 is still on the bench on October 2, and a quarter rolling over
+// must never take it off the list. Older than that is not work anyone is still
+// waiting on. The picker adds a quarter's finished rows ("Show finished") and
+// is how you look further back.
+
+const $ = (id) => document.getElementById(id);
+
+let ROWS = [];
+let APPOINTMENTS = [];
+let appointmentsLoaded = false;
+
+const COLUMNS =
+  "checked_in_at,id,customer_name,is_stock,phone,item,pickup_location,order_location," +
+  "shop_order_date,submitted_at,drilled,drilled_at,no_drill_needed," +
+  "out_the_door,paid,notes,quarter,due_date,staff_member,fitting";
+
+// Names that mean "no customer", so the row is shop stock by another route.
+const NOT_A_CUSTOMER = new Set(["", "stock", "unknown", "shop", "shop stock"]);
+
+function showError(err) {
+  $("error").textContent = String(err && err.message ? err.message : err);
+  $("error").classList.remove("hidden");
+  console.error(err);
+}
+
+function currentQuarterLabel() {
+  const n = new Date();
+  return `${n.getFullYear()} Q${Math.floor(n.getMonth() / 3) + 1}`;
+}
+
+// First day of the previous quarter, as an ISO day: 2026-07-01 for any day in
+// October to December 2026. Unfinished work ordered on or after it is shown
+// regardless of the quarter picker.
+function openSince(now) {
+  const q = Math.floor(now.getMonth() / 3);
+  const y = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const m = q === 0 ? 9 : (q - 1) * 3;
+  return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+}
+
+// Pickup falls back to the order location, as the Pickup column shows it. An
+// order for "Both" belongs to either shop, and one with no location at all is
+// far more likely an oversight than a statement that it is somewhere else --
+// the same rule the day board uses -- so neither disappears under a filter.
+function atLocation(r, loc) {
+  if (!loc) return true;
+  const where = r.pickup_location || r.order_location;
+  return !where || where === loc || where === "Both";
+}
+
+function quarterRank(label) {
+  const m = /^(\d+)\s*Q([1-4])$/.exec(label || "");
+  return m ? Number(m[1]) * 10 + Number(m[2]) : -1;
+}
+
+// ---------------------------------------------------------------------------
+// Load
+// ---------------------------------------------------------------------------
+
+async function loadQuarters() {
+  const rows = await receiving.selectAll(
+    "orders",
+    "select=quarter&deleted_at=is.null&quarter=not.is.null&is_stock=is.false"
+  );
+  const seen = [...new Set(rows.map((r) => r.quarter))]
+    .filter((q) => quarterRank(q) >= 20200)
+    .sort((a, b) => quarterRank(b) - quarterRank(a));
+
+  const sel = $("quarter");
+  sel.innerHTML = "";
+  for (const q of seen) {
+    const o = document.createElement("option");
+    o.value = o.textContent = q;
+    sel.appendChild(o);
+  }
+  const current = currentQuarterLabel();
+  sel.value = seen.includes(current) ? current : (seen[0] || "");
+}
+
+async function load() {
+  $("error").classList.add("hidden");
+  const quarter = $("quarter").value;
+  try {
+    // Not-yet-ordered rows have no quarter, so they need their own request --
+    // they are exactly the "new items" this page is supposed to surface.
+    const base = `select=${COLUMNS}&deleted_at=is.null&is_stock=is.false`;
+    const [pending, open, thisQuarter] = await Promise.all([
+      receiving.selectAll("orders", `${base}&shop_order_date=is.null`),
+      receiving.selectAll(
+        "orders",
+        `${base}&shop_order_date=gte.${openSince(new Date())}` +
+          `&drilled=is.false&no_drill_needed=is.false&out_the_door=is.false`
+      ),
+      quarter
+        ? receiving.selectAll("orders", `${base}&quarter=eq.${encodeURIComponent(quarter)}`)
+        : Promise.resolve([]),
+    ]);
+
+    // The open list and the picked quarter overlap; keep one copy of each row.
+    const byId = new Map();
+    for (const r of [...pending, ...open, ...thisQuarter]) byId.set(r.id, r);
+    ROWS = [...byId.values()].filter(
+      (r) => !NOT_A_CUSTOMER.has((r.customer_name || "").trim().toLowerCase())
+    );
+    await Promise.all([loadAppointments(), loadContacts()]);
+    render();
+  } catch (err) {
+    showError(err);
+  }
+}
+
+async function loadAppointments() {
+  appointmentsLoaded = false;
+  try {
+    APPOINTMENTS = await db.selectAll("appointments",
+      "select=id,order_id,customer_name,service,appt_date,appt_time,location,completed&deleted_at=is.null&order=appt_date.asc,appt_time.asc,id.asc");
+    appointmentsLoaded = true;
+  } catch (err) {
+    APPOINTMENTS = [];
+    showError(new Error("Could not load appointment status. Ensure migration/add_appointment_order_link.sql has been applied. " + err.message));
+  }
+}
+
+// Last time someone texted the customer about this order. Loaded on its own,
+// not through COLUMNS, so the queue still loads before
+// migration/add_order_contact.sql has been run -- only the Texted column
+// goes quiet.
+let CONTACTS = new Map();
+let contactsLoaded = false;
+
+async function loadContacts() {
+  try {
+    const rows = await db.selectAll("orders",
+      "select=id,last_contacted_at&deleted_at=is.null&is_stock=is.false&last_contacted_at=not.is.null");
+    CONTACTS = new Map(rows.map((r) => [r.id, r.last_contacted_at]));
+    contactsLoaded = true;
+  } catch (err) {
+    contactsLoaded = false;
+    console.error("Could not load texted times. Run migration/add_order_contact.sql.", err);
+  }
+}
+
+function contactLabel(value) {
+  if (!value) return "Not texted yet";
+  const d = new Date(value);
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `Last: ${d.getMonth() + 1}/${d.getDate()} ${time}`;
+}
+
+function contactCell(r) {
+  const cell = document.createElement("div");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Texted";
+  button.title = "Record that you just texted this customer about this item";
+  const note = document.createElement("div");
+  note.className = "sub";
+  const paint = () => {
+    note.textContent = contactsLoaded ? contactLabel(CONTACTS.get(r.id)) : "Unavailable";
+  };
+  button.disabled = !contactsLoaded;
+  paint();
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = "…";
+    try {
+      const at = new Date().toISOString();
+      await db.update("orders", `id=eq.${r.id}`, { last_contacted_at: at });
+      CONTACTS.set(r.id, at);
+    } catch (err) {
+      showError(err);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Texted";
+      paint();
+    }
+  });
+  cell.append(button, note);
+  return cell;
+}
+
+function appointmentStatus(order, appointments, today) {
+  const linked = appointments.filter(a => a.order_id === order.id);
+  const upcoming = linked.filter(a => !a.completed && a.appt_date >= today);
+  if (upcoming.length) return { label: "Scheduled", appointments: upcoming };
+  const past = linked.filter(a => !a.completed && a.appt_date < today);
+  if (past.length) return { label: "Past appointment — check status", appointments: past.slice(-1) };
+  if (linked.length) return { label: "Appointment completed", appointments: linked.slice(-1) };
+  // Old bookings have no order ID. Surface exact name/item matches as candidates,
+  // never mark a second identical ball as definitely scheduled by guessing.
+  const norm = v => (v || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const possible = appointments.filter(a => !a.order_id && !a.completed &&
+    norm(a.customer_name) === norm(order.customer_name) &&
+    [norm(order.item), norm("Drill " + order.item)].includes(norm(a.service)));
+  return { label: possible.length ? "Possible booking — link in Appointments" : "Not scheduled", appointments: possible };
+}
+
+// ---------------------------------------------------------------------------
+// Status
+// ---------------------------------------------------------------------------
+
+function statusOf(r) {
+  if (r.out_the_door) return { key: "done", label: "Out the door" };
+  if (r.drilled) return { key: "done", label: "Drilled" };
+  if (r.no_drill_needed) return { key: "done", label: "No drill needed" };
+  if (!r.shop_order_date) return { key: "pending", label: "Not ordered" };
+  return { key: "ordered", label: "Waiting to drill" };
+}
+
+function finished(r) {
+  return r.drilled || r.out_the_door || r.no_drill_needed;
+}
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+
+function shortDate(v) {
+  if (!v) return "";
+  const [y, m, d] = v.slice(0, 10).split("-");
+  return `${Number(m)}/${Number(d)}/${y.slice(2)}`;
+}
+
+// When the customer placed the order. A timestamp, so it is read in local
+// time: an order made at 9pm belongs to that evening, not tomorrow in UTC.
+function customerOrderDay(r) {
+  if (r.submitted_at) return isoOf(new Date(r.submitted_at));
+  return r.shop_order_date || "";
+}
+
+function daysSince(v) {
+  if (!v) return null;
+  const [y, m, d] = v.slice(0, 10).split("-").map(Number);
+  const then = new Date(y, m - 1, d);
+  const now = new Date();
+  return Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - then) / 86400000);
+}
+
+function visible() {
+  const q = $("search").value.trim().toLowerCase();
+  const loc = $("location").value;
+  const who = $("assignee").value;
+  const showDone = $("showdone").checked;
+  const booking = appointmentsLoaded ? $("booking").value : "";
+  const today = isoOf(new Date());
+
+  return ROWS.filter((r) => {
+    if (!showDone && finished(r)) return false;
+    if (!atLocation(r, loc)) return false;
+    if (who === "__none__" && r.staff_member) return false;
+    if (who && who !== "__none__" && r.staff_member !== who) return false;
+    if (booking) {
+      const label = appointmentStatus(r, APPOINTMENTS, today).label;
+      if (booking === "none" && label !== "Not scheduled") return false;
+      if (booking === "booked" && label !== "Scheduled") return false;
+    }
+    if (q) {
+      const hay = [r.customer_name, r.item, r.phone].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    // The customer who has waited longest since they ordered goes first.
+    // Rows with no order date at all sink to the bottom.
+    const ac = a.submitted_at || a.shop_order_date || "";
+    const bc = b.submitted_at || b.shop_order_date || "";
+    if (!ac !== !bc) return ac ? -1 : 1;
+    return ac.localeCompare(bc);
+  });
+}
+
+function render() {
+  const rows = visible();
+  const body = $("rows");
+  body.innerHTML = "";
+
+  for (const r of rows) body.appendChild(row(r));
+
+  $("empty").classList.toggle("hidden", rows.length > 0);
+  // Counts follow the search, location and assignee filters, so they match
+  // the rows on screen.
+  const waiting = rows.filter((r) => !finished(r) && r.shop_order_date).length;
+  const notOrdered = rows.filter((r) => !finished(r) && !r.shop_order_date).length;
+  $("count").textContent =
+    `${waiting} waiting to drill` + (notOrdered ? ` · ${notOrdered} not ordered yet` : "");
+}
+
+function row(r) {
+  const tr = document.createElement("tr");
+  const st = statusOf(r);
+  if (st.key === "pending") tr.classList.add("pending");
+
+  const td = (label, cls) => {
+    const c = document.createElement("td");
+    if (label) c.dataset.label = label;
+    if (cls) c.className = cls;
+    tr.appendChild(c);
+    return c;
+  };
+
+  const badge = document.createElement("span");
+  badge.className = "badge " + st.key;
+  badge.textContent = st.label;
+  const statusCell = td("Status");
+  statusCell.appendChild(receiving.badge(r));
+  if (finished(r)) statusCell.appendChild(badge);
+
+  td("Name").textContent = r.customer_name;
+
+  const item = td("Item", "col-item");
+  item.textContent = r.item;
+  if (receiving.needsFitting(r) && !finished(r)) {
+    const fit = document.createElement("span");
+    fit.className = "badge fitting";
+    fit.textContent = "Needs fitting";
+    fit.title = "The customer asked to be fitted: " + r.fitting;
+    fit.style.marginLeft = "6px";
+    item.appendChild(fit);
+  }
+  if (r.notes) {
+    const n = document.createElement("div");
+    n.style.cssText = "color:var(--muted);font-size:12px";
+    n.textContent = r.notes;
+    item.appendChild(n);
+  }
+
+  // A phone number on a drilling sheet exists to be called, so make it dial.
+  const ph = td("Phone", "nowrap");
+  if (r.phone) {
+    const a = document.createElement("a");
+    a.href = "tel:" + r.phone.replace(/\D/g, "");
+    a.textContent = r.phone;
+    ph.appendChild(a);
+  } else {
+    ph.innerHTML = '<span style="color:#c3c8ce">—</span>';
+  }
+
+  td("Pickup").textContent = r.pickup_location || r.order_location || "";
+
+  // How long the customer has been waiting, next to when the shop ordered it.
+  const custDay = customerOrderDay(r);
+  const cust = td("Customer ordered", "nowrap");
+  if (custDay) {
+    cust.textContent = shortDate(custDay);
+    const age = daysSince(custDay);
+    if (age !== null && age > 0 && !finished(r)) {
+      const d = document.createElement("div");
+      d.className = "sub";
+      d.textContent = `${age} day${age === 1 ? "" : "s"} ago`;
+      cust.appendChild(d);
+    }
+  } else {
+    cust.innerHTML = '<span style="color:#c3c8ce">—</span>';
+  }
+
+  const when = td("Shop ordered", "nowrap");
+  if (r.shop_order_date) {
+    when.textContent = shortDate(r.shop_order_date);
+    const age = daysSince(r.shop_order_date);
+    if (age !== null && age > 0 && !finished(r)) {
+      const d = document.createElement("div");
+      d.className = "sub";
+      d.textContent = `${age} day${age === 1 ? "" : "s"} ago`;
+      when.appendChild(d);
+    }
+  } else {
+    when.innerHTML = '<span style="color:#c3c8ce">not ordered</span>';
+  }
+
+  // Due date and owner: what the day board reads, and the two things a
+  // shop-floor queue cannot work without. Editable in place, like the
+  // orders grid, because these get set while standing at the bench.
+  const dueCell = td("Due", "nowrap");
+  dueCell.appendChild(editable(r, "due_date", "date"));
+  if (r.due_date && !finished(r)) {
+    const late = daysSince(r.due_date);
+    if (late !== null && late >= 0) {
+      const tag = document.createElement("div");
+      tag.className = "sub " + (late > 0 ? "overdue" : "duetoday");
+      tag.textContent = late === 0 ? "due today" : `${late} day${late === 1 ? "" : "s"} late`;
+      dueCell.appendChild(tag);
+    }
+  }
+
+  const booking = td("Appointment");
+  const info = appointmentsLoaded ? appointmentStatus(r, APPOINTMENTS, isoOf(new Date()))
+    : { label: "Appointment status unavailable", appointments: [] };
+  const label = document.createElement("strong");
+  label.textContent = info.label;
+  booking.appendChild(label);
+  for (const a of info.appointments) {
+    const detail = document.createElement("div");
+    detail.textContent = [shortDate(a.appt_date), prettyTime(a.appt_time) || "Time TBD", a.location].filter(Boolean).join(" · ");
+    booking.appendChild(detail);
+  }
+
+  td("Texted", "nowrap").appendChild(contactCell(r));
+  td("Assigned").appendChild(assignSelect(r));
+
+  const act = td("");
+  // Already collected -- the drill flag no longer means anything, and an
+  // "Undo" here would clear it while the row still reads "Out the door".
+  if (r.out_the_door) {
+    act.innerHTML = '<span style="color:#c3c8ce">—</span>';
+    return tr;
+  }
+
+  act.style.whiteSpace = "nowrap";
+
+  // Already resolved one way or the other -- offer only the way back.
+  if (r.drilled || r.no_drill_needed) {
+    const undo = document.createElement("button");
+    undo.textContent = "Undo";
+    undo.title = r.drilled
+      ? (r.drilled_at ? "Drilled " + shortDate(r.drilled_at) : "Drilled")
+      : "Marked as needing no drilling";
+    undo.addEventListener("click", () =>
+      setFlags(r, undo, { drilled: false, drilled_at: null, no_drill_needed: false })
+    );
+    act.appendChild(undo);
+    return tr;
+  }
+
+  const drilled = document.createElement("button");
+  drilled.textContent = "Drilled";
+  drilled.className = "primary";
+  drilled.addEventListener("click", () =>
+    setFlags(r, drilled, { drilled: true, drilled_at: new Date().toISOString() })
+  );
+
+  // Bags, shoes, totes and tape all arrive for a named customer, so they land
+  // here too. Marking them "drilled" would put a false record on the order.
+  const nodrill = document.createElement("button");
+  nodrill.textContent = "No drill";
+  nodrill.title = "Remove from this list without recording a drill";
+  nodrill.style.marginLeft = "5px";
+  nodrill.addEventListener("click", () =>
+    setFlags(r, nodrill, { no_drill_needed: true })
+  );
+
+  const sched = document.createElement("button");
+  sched.textContent = "Schedule";
+  sched.title = "Book a drilling appointment for this customer";
+  sched.style.marginLeft = "5px";
+  // A customer who asked to be fitted gets "Fit and drill" filled in.
+  sched.addEventListener("click", () => openScheduler(r, receiving.needsFitting(r)));
+
+  // Nothing to drill or book until the shop has actually placed the order.
+  if (!r.shop_order_date) {
+    for (const b of [drilled, sched]) {
+      b.disabled = true;
+      b.title = "Not ordered from the distributor yet";
+    }
+  }
+
+  act.append(drilled, nodrill, sched);
+  return tr;
+}
+
+// Click-to-edit, the same gesture as the orders grid. Kept local rather than
+// shared with orders.js: the pages load different scripts, and one small
+// duplicated editor is cheaper than a fifth file everything has to include.
+function editable(r, field, type) {
+  const span = document.createElement("span");
+  span.className = "cell";
+
+  const paint = () => {
+    const text = field === "due_date" ? shortDate(r[field]) : (r[field] || "");
+    span.textContent = text;
+    span.classList.toggle("empty", text === "");
+  };
+  paint();
+
+  span.addEventListener("click", () => {
+    if (span.querySelector("input")) return;
+    const input = document.createElement("input");
+    input.type = type;
+    input.value = r[field] || "";
+    span.textContent = "";
+    span.appendChild(input);
+    input.focus();
+
+    let settled = false;
+    const commit = async () => {
+      if (settled) return;
+      settled = true;
+      const value = input.value.trim() || null;
+      if (value === r[field]) return paint();
+
+      span.classList.add("saving");
+      try {
+        await db.update("orders", `id=eq.${r.id}`, { [field]: value });
+        r[field] = value;
+        span.classList.remove("saving", "saveerr");
+        // A due date changes where the row sorts, so the page has to re-sort.
+        render();
+      } catch (err) {
+        span.classList.remove("saving");
+        span.classList.add("saveerr");
+        paint();
+        showError(err);
+      }
+    };
+
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      if (e.key === "Escape") { settled = true; paint(); }
+    });
+  });
+
+  return span;
+}
+
+function assignSelect(r) {
+  const sel = document.createElement("select");
+  sel.className = "assign";
+  // Filled asynchronously from the cached roster -- the first call fetches,
+  // every later one resolves off the cache, so a 200-row table is one request.
+  staff.fillSelect(sel, r.staff_member).catch(showError);
+
+  sel.addEventListener("change", async () => {
+    const value = sel.value || null;
+    const before = r.staff_member;
+    sel.disabled = true;
+    try {
+      await db.update("orders", `id=eq.${r.id}`, { staff_member: value });
+      r.staff_member = value;
+    } catch (err) {
+      sel.value = before || "";
+      showError(err);
+    } finally {
+      sel.disabled = false;
+    }
+  });
+  return sel;
+}
+
+// Fills the toolbar filter. Failing to load the roster must not take the
+// drilling queue down with it -- the filter just stays at "Anyone".
+async function loadAssignees() {
+  try {
+    const sel = $("assignee");
+    for (const name of await staff.names()) {
+      const o = document.createElement("option");
+      o.value = o.textContent = name;
+      sel.appendChild(o);
+    }
+  } catch (err) {
+    console.error("Could not load the staff roster:", err);
+  }
+}
+
+async function setFlags(r, btn, patch) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "…";
+  try {
+    await db.update("orders", `id=eq.${r.id}`, patch);
+    Object.assign(r, patch);
+    render();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = label;
+    showError(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Scheduler
+//
+// A one-week strip rather than a month grid: booking a drilling appointment is
+// a "what does the next few days look like" question, and a week leaves room
+// to show who is already on the books for the day being considered.
+//
+// As in appointments.js, days are {y, m, d} integers and never go through the
+// Date constructor as a string -- new Date("2026-08-30") is UTC midnight and
+// renders as the 29th here.
+// ---------------------------------------------------------------------------
+
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const pad = (n) => String(n).padStart(2, "0");
+const isoOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+let sched = { order: null, weekStart: null, picked: null, appts: [] };
+
+function startOfWeek(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());   // back to Sunday
+  return d;
+}
+
+function weekDays(start) {
+  return Array.from({ length: 7 }, (_, i) =>
+    new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+  );
+}
+
+function prettyTime(t) {
+  if (!t) return "";
+  const [hs, mm] = t.split(":");
+  let h = Number(hs);
+  const ap = h >= 12 ? "p" : "a";
+  h = h % 12 || 12;
+  return mm === "00" ? `${h}${ap}` : `${h}:${mm}${ap}`;
+}
+
+function openScheduler(order, fitting = false) {
+  const today = new Date();
+  sched.order = order;
+  sched.weekStart = startOfWeek(today);
+  sched.picked = isoOf(today);
+
+  $("s_who").textContent = order.customer_name + (order.phone ? ` · ${order.phone}` : "");
+  $("s_what").textContent = order.item;
+  $("s_service").value = `${fitting ? "Fit and drill" : "Drill"} ${order.item}`;
+  $("s_location").value = order.pickup_location === "Both"
+    ? ""
+    : (order.pickup_location || order.order_location || "");
+  $("s_time").value = "";
+
+  $("dlg").showModal();
+  loadWeek();
+}
+
+async function loadWeek() {
+  const days = weekDays(sched.weekStart);
+  const from = isoOf(days[0]);
+  const to = isoOf(days[6]);
+  $("s_weeklabel").textContent =
+    `${MON[days[0].getMonth()]} ${days[0].getDate()} – ${MON[days[6].getMonth()]} ${days[6].getDate()}`;
+
+  try {
+    sched.appts = await db.selectAll(
+      "appointments",
+      `select=customer_name,service,location,appt_date,appt_time&deleted_at=is.null` +
+        `&appt_date=gte.${from}&appt_date=lte.${to}` +
+        `&order=appt_time.asc.nullsfirst`
+    );
+  } catch (err) {
+    sched.appts = [];
+    showError(err);
+  }
+  renderWeek();
+}
+
+function renderWeek() {
+  const strip = $("s_strip");
+  strip.innerHTML = "";
+  const todayIso = isoOf(new Date());
+
+  const counts = {};
+  for (const a of sched.appts) counts[a.appt_date] = (counts[a.appt_date] || 0) + 1;
+
+  for (const d of weekDays(sched.weekStart)) {
+    const key = isoOf(d);
+    const n = counts[key] || 0;
+
+    const cell = document.createElement("div");
+    cell.className = "wday";
+    if (key === todayIso) cell.classList.add("today");
+    if (key === sched.picked) cell.classList.add("selected");
+    if (n >= 4) cell.classList.add("busy");
+
+    cell.innerHTML =
+      `<div class="wd-dow">${DOW[d.getDay()]}</div>` +
+      `<div class="wd-num">${d.getDate()}</div>` +
+      `<div class="wd-count">${n ? n : ""}</div>`;
+    cell.title = n ? `${n} appointment${n === 1 ? "" : "s"}` : "Nothing booked";
+
+    cell.addEventListener("click", () => {
+      sched.picked = key;
+      renderWeek();
+    });
+    strip.appendChild(cell);
+  }
+
+  renderDayList();
+}
+
+function renderDayList() {
+  const list = $("s_dayappts");
+  list.innerHTML = "";
+  const onDay = sched.appts.filter((a) => a.appt_date === sched.picked);
+
+  const [y, m, d] = sched.picked.split("-").map(Number);
+  const when = new Date(y, m - 1, d);
+  $("s_picked").textContent = `${DOW[when.getDay()]} ${m}/${d}` +
+    (onDay.length ? ` · ${onDay.length} booked` : " · nothing booked");
+
+  if (!onDay.length) {
+    list.innerHTML = '<div class="none">Nothing booked this day.</div>';
+    return;
+  }
+
+  for (const a of onDay) {
+    const row = document.createElement("div");
+    row.className = "dayrow";
+
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = prettyTime(a.appt_time) || "—";
+
+    const who = document.createElement("span");
+    who.className = "who";
+    who.textContent = a.customer_name;
+
+    const svc = document.createElement("span");
+    svc.className = "svc";
+    svc.textContent = a.service || "";
+
+    row.append(t, who, svc);
+    if (a.location) {
+      const loc = document.createElement("span");
+      loc.className = "loc" + (a.location === "South Side" ? " south" : "");
+      loc.textContent = a.location;
+      row.appendChild(loc);
+    }
+    list.appendChild(row);
+  }
+}
+
+function stepWeek(delta) {
+  // Keep the selection on the same weekday in the new week, so paging
+  // forward from "Thursday" lands on the next Thursday.
+  const [y, m, d] = sched.picked.split("-").map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+
+  const s = sched.weekStart;
+  sched.weekStart = new Date(s.getFullYear(), s.getMonth(), s.getDate() + delta * 7);
+  sched.picked = isoOf(weekDays(sched.weekStart)[dow]);
+  loadWeek();
+}
+
+async function bookAppointment(e) {
+  e.preventDefault();
+  const o = sched.order;
+  const row = {
+    order_id: o.id,
+    customer_name: o.customer_name,
+    phone: o.phone || null,
+    service: $("s_service").value.trim(),
+    location: $("s_location").value || null,
+    appt_date: sched.picked,
+    appt_time: $("s_time").value || null,
+    completed: false,
+    // Carried across so the day board shows one owner for the whole job
+    // rather than an assigned order and an unassigned appointment for it.
+    staff_member: o.staff_member || null,
+    paid: !!o.paid,
+  };
+  if (!row.service) return;
+
+  const btn = $("s_save");
+  btn.disabled = true;
+  btn.textContent = "Booking…";
+  try {
+    await db.insert("appointments", row);
+    $("dlg").close();
+    await loadAppointments();
+    render();
+  } catch (err) {
+    showError(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Book it";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Wiring
+// ---------------------------------------------------------------------------
+
+let t;
+$("search").addEventListener("input", () => {
+  clearTimeout(t);
+  t = setTimeout(render, 150);
+});
+$("quarter").addEventListener("change", load);
+$("refresh").addEventListener("click", load);
+window.addEventListener("focus", async () => {
+  if ($("dlg").open || $("exportdlg").open || document.activeElement?.matches("input,select,textarea")) return;
+  await Promise.all([loadAppointments(), loadContacts()]);
+  render();
+});
+$("location").addEventListener("change", render);
+$("assignee").addEventListener("change", render);
+$("booking").addEventListener("change", render);
+$("showdone").addEventListener("change", render);
+
+$("s_prev").addEventListener("click", () => stepWeek(-1));
+$("s_next").addEventListener("click", () => stepWeek(1));
+$("s_thisweek").addEventListener("click", () => {
+  const now = new Date();
+  sched.weekStart = startOfWeek(now);
+  sched.picked = isoOf(now);
+  loadWeek();
+});
+$("schedform").addEventListener("submit", bookAppointment);
+$("s_cancel").addEventListener("click", () => $("dlg").close());
+
+(async function init() {
+  try {
+    loadAssignees();       // not worth blocking the queue on
+    await loadQuarters();
+    await load();
+  } catch (err) {
+    showError(err);
+  }
+})();
+
+receiving.watch(load, () => !document.querySelector('dialog[open]') && !document.querySelector('td input:focus, td select:focus'));

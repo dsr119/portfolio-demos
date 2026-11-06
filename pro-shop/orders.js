@@ -1,0 +1,645 @@
+// Orders page.
+//
+// The sort is the feature: anything with no shop_order_date is work Amy has
+// not placed with a distributor yet, so it sits at the top of the page under
+// its own heading, regardless of which quarter is selected. Changing the
+// quarter filter must never hide outstanding work.
+
+const LOCATIONS = ["", "Valley", "South Side", "Both"];
+
+// How an order reached the shop. The stored values are the ones the intakes
+// write -- apps-script/form-to-supabase.gs sends 'google_form', the embedded
+// order page on the Google Site sends 'website', app/order.js sends 'in_shop',
+// and everything from the workbook is 'import'.
+const SOURCES = {
+  website:     { label: "Website",      cls: "src-web" },
+  google_form: { label: "Google Form",  cls: "src-form" },
+  in_shop:     { label: "Manual entry", cls: "src-shop" },
+  import:      { label: "Imported",     cls: "src-import" },
+};
+
+let ORDERS = [];          // everything currently loaded
+let SELECTED = new Set(); // ids ticked for a bulk update
+let CARRIED = new Set();  // ids of last quarter's still-open orders
+
+const $ = (id) => document.getElementById(id);
+
+function showError(err) {
+  const box = $("error");
+  box.textContent = String(err && err.message ? err.message : err);
+  box.classList.remove("hidden");
+  console.error(err);
+}
+
+function clearError() {
+  $("error").classList.add("hidden");
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+const COLUMNS =
+  "checked_in_at,id,submitted_at,source,customer_name,is_stock,phone,item,quantity,notes," +
+  "order_location,pickup_location,shop_order_date,supplier,supplier_order_no," +
+  "invoice_no,price,paid,out_the_door,quarter,migration_flag,fitting";
+
+async function load() {
+  clearError();
+  try {
+    // Two requests rather than one, so the pending queue is always complete
+    // even when a single quarter is selected.
+    const quarter = $("quarter").value;
+    const base = `select=${COLUMNS}&deleted_at=is.null`;
+
+    const pending = receiving.selectAll(
+      "orders",
+      `${base}&shop_order_date=is.null&order=submitted_at.asc.nullslast`
+    );
+
+    // Paged: "All quarters" is 2,176 rows and a single response stops at
+    // 1000, with nothing to tell the user the rest is missing.
+    const placed = receiving.selectAll(
+      "orders",
+      `${base}&shop_order_date=not.is.null` +
+        (quarter ? `&quarter=eq.${encodeURIComponent(quarter)}` : "") +
+        `&order=shop_order_date.desc,submitted_at.desc`
+    );
+
+    // On the current quarter, customer orders placed last quarter that have
+    // not gone out the door yet stay on the page. Without this, the first
+    // order placed in a new quarter hides every ball still waiting from the
+    // old one. Stock is left to Order Check In, which tracks its arrival.
+    const carried = quarter && quarter === currentQuarterLabel()
+      ? receiving.selectAll(
+          "orders",
+          `${base}&is_stock=is.false&out_the_door=is.false` +
+            `&shop_order_date=gte.${openSince(new Date())}` +
+            `&quarter=neq.${encodeURIComponent(quarter)}` +
+            `&order=shop_order_date.desc,submitted_at.desc`
+        )
+      : Promise.resolve([]);
+
+    const [a, b, more] = await Promise.all([pending, placed, carried]);
+    const inQuarter = new Set(b.map((o) => o.id));
+    const c = more.filter((o) => !inQuarter.has(o.id));
+    CARRIED = new Set(c.map((o) => o.id));
+    ORDERS = [...a, ...b, ...c];
+    SELECTED.clear();
+    render();
+  } catch (err) {
+    showError(err);
+  }
+}
+
+// "2026 Q3" -> 20263, for sorting. Sorting the label as text is wrong:
+// "225 Q4" (from a mistyped year) compares greater than "2026 Q3", because
+// '2' > '0' at the second character. One bad row would then hijack the
+// default view.
+function quarterRank(label) {
+  const m = /^(\d+)\s*Q([1-4])$/.exec(label || "");
+  return m ? Number(m[1]) * 10 + Number(m[2]) : -1;
+}
+
+// First day of the previous quarter, as an ISO day: 2026-07-01 for any day in
+// October to December 2026.
+function openSince(now) {
+  const q = Math.floor(now.getMonth() / 3);
+  const y = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const m = q === 0 ? 9 : (q - 1) * 3;
+  return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+}
+
+function currentQuarterLabel() {
+  const now = new Date();
+  return `${now.getFullYear()} Q${Math.floor(now.getMonth() / 3) + 1}`;
+}
+
+async function loadQuarters() {
+  // PostgREST has no DISTINCT, so pull the column and reduce it here. Must
+  // page: a single response stops at 1000 rows, which would silently drop
+  // the oldest quarters off the end of the filter.
+  const rows = await receiving.selectAll(
+    "orders",
+    "select=quarter&deleted_at=is.null&quarter=not.is.null"
+  );
+  const seen = [...new Set(rows.map((r) => r.quarter))]
+    .sort((a, b) => quarterRank(b) - quarterRank(a));
+
+  const sel = $("quarter");
+  for (const q of seen) {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = q;
+    // A year outside living memory means a mistyped date, not a real quarter.
+    if (quarterRank(q) < 20200) opt.textContent = q + "  (check date)";
+    sel.appendChild(opt);
+  }
+
+  // Default to the quarter we are actually in; fall back to the newest
+  // plausible one if the shop has not ordered yet this quarter.
+  const current = currentQuarterLabel();
+  if (seen.includes(current)) sel.value = current;
+  else {
+    const plausible = seen.find((q) => quarterRank(q) >= 20200);
+    if (plausible) sel.value = plausible;
+  }
+}
+
+async function loadSuggestions() {
+  // Supabase caps a response at 1000 rows regardless of the limit asked for.
+  // Ordering by times_ordered means the cut falls on the items nobody has
+  // bought in a decade, which is the right thing to lose from a typeahead.
+  const [items, sup] = await Promise.all([
+    db.select("items", "select=item&order=times_ordered.desc&limit=1000"),
+    db.select("orders", "select=supplier&deleted_at=is.null&supplier=not.is.null"),
+  ]);
+  fillDatalist("items", items.map((i) => i.item));
+  fillDatalist("suppliers", [...new Set(sup.map((s) => s.supplier))].sort());
+}
+
+function fillDatalist(id, values) {
+  const dl = $(id);
+  dl.innerHTML = "";
+  for (const v of values) {
+    const o = document.createElement("option");
+    o.value = v;
+    dl.appendChild(o);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Filtering
+// ---------------------------------------------------------------------------
+
+function statusOf(o) {
+  if (!o.shop_order_date) return "pending";
+  if (o.out_the_door) return "done";
+  return o.checked_in_at ? "received" : "ordered";
+}
+
+function visible() {
+  const q = $("search").value.trim().toLowerCase();
+  const loc = $("location").value;
+  const st = $("status").value;
+  const src = $("source").value;
+
+  return ORDERS.filter((o) => {
+    if (loc && o.order_location !== loc && o.pickup_location !== loc) return false;
+    if (src && o.source !== src) return false;
+
+    if (st === "pending" && o.shop_order_date) return false;
+    if (st === "ordered" && (!o.shop_order_date || o.checked_in_at || o.out_the_door)) return false;
+    if (st === "received" && !o.checked_in_at) return false;
+    if (st === "done" && !o.out_the_door) return false;
+    if (st === "unpaid" && (o.paid || o.is_stock)) return false;
+
+    if (q) {
+      const hay = [
+        o.customer_name, o.item, o.phone, o.supplier,
+        o.supplier_order_no, o.invoice_no, o.notes,
+      ].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+function money(v) {
+  return v === null || v === undefined || v === "" ? "" : "$" + Number(v).toFixed(2);
+}
+
+function shortDate(v) {
+  if (!v) return "";
+  const [y, m, d] = v.slice(0, 10).split("-");
+  return `${Number(m)}/${Number(d)}/${y.slice(2)}`;
+}
+
+function render() {
+  const rows = visible();
+  const body = $("rows");
+  body.innerHTML = "";
+
+  const pending = rows.filter((o) => !o.shop_order_date);
+  const placed = rows.filter((o) => o.shop_order_date && !CARRIED.has(o.id));
+  const carried = rows.filter((o) => CARRIED.has(o.id));
+
+  if (pending.length) {
+    body.appendChild(groupRow(`Not ordered yet — ${pending.length}`));
+    pending.forEach((o) => body.appendChild(orderRow(o)));
+  }
+  if (placed.length) {
+    const q = $("quarter").value;
+    body.appendChild(groupRow(q ? `${q} — ${placed.length}` : `All quarters — ${placed.length}`));
+    placed.forEach((o) => body.appendChild(orderRow(o)));
+  }
+  if (carried.length) {
+    body.appendChild(groupRow(`Still open from last quarter — ${carried.length}`));
+    carried.forEach((o) => body.appendChild(orderRow(o)));
+  }
+
+  $("empty").classList.toggle("hidden", rows.length > 0);
+  $("count").textContent =
+    `${rows.length} of ${ORDERS.length} shown` +
+    (pending.length ? ` · ${pending.length} awaiting order` : "");
+  updateBulkBar();
+}
+
+function groupRow(label) {
+  const tr = document.createElement("tr");
+  tr.className = "grouprow";
+  const td = document.createElement("td");
+  td.colSpan = 19;
+  td.textContent = label;
+  tr.appendChild(td);
+  return tr;
+}
+
+function orderRow(o) {
+  const tr = document.createElement("tr");
+  tr.dataset.id = o.id;
+  const status = statusOf(o);
+  if (status === "pending") tr.classList.add("pending");
+  if (SELECTED.has(o.id)) tr.classList.add("selected");
+
+  // checkbox
+  const cbCell = td(tr, "Select");
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = SELECTED.has(o.id);
+  cb.addEventListener("change", () => {
+    cb.checked ? SELECTED.add(o.id) : SELECTED.delete(o.id);
+    tr.classList.toggle("selected", cb.checked);
+    updateBulkBar();
+  });
+  cbCell.appendChild(cb);
+
+  // status
+  const st = td(tr, "Status");
+  st.appendChild(receiving.badge(o));
+  if (o.out_the_door) {
+    const done = document.createElement("span");
+    done.className = "badge done";
+    done.textContent = "Out the door";
+    st.appendChild(done);
+  }
+  if (receiving.needsFitting(o) && !o.out_the_door) {
+    const fit = document.createElement("span");
+    fit.className = "badge fitting";
+    fit.textContent = "Needs fitting";
+    fit.title = "The customer asked to be fitted: " + o.fitting;
+    fit.style.marginLeft = "4px";
+    st.appendChild(fit);
+  }
+  if (o.migration_flag) {
+    const f = document.createElement("span");
+    f.className = "badge flag";
+    f.textContent = "check";
+    f.title = o.migration_flag;
+    f.style.marginLeft = "4px";
+    st.appendChild(f);
+  }
+
+  // customer
+  const nameCell = td(tr, "Customer");
+  nameCell.appendChild(editable(o, "customer_name", "text"));
+  nameCell.title = "Click to edit. Enter a customer name to assign stock; enter Stock to return it to stock.";
+
+  td(tr, "Item").appendChild(editable(o, "item", "text", { list: "items" }));
+  td(tr, "Qty", "num").appendChild(editable(o, "quantity", "number"));
+  td(tr, "Phone", "nowrap").appendChild(editable(o, "phone", "text"));
+  td(tr, "Order loc").appendChild(editable(o, "order_location", "select", { options: LOCATIONS }));
+  td(tr, "Pickup").appendChild(editable(o, "pickup_location", "select", { options: LOCATIONS }));
+
+  // Provenance, not data entry: when the order arrived and by what route are
+  // facts about what already happened, so neither is editable. Sitting them
+  // beside the shop order date makes the wait legible -- "came in 8/1, we
+  // placed it 8/19" is the whole story in two columns.
+  td(tr, "Came in", "nowrap").appendChild(cameIn(o));
+  td(tr, "From").appendChild(sourceBadge(o));
+
+  td(tr, "Shop ordered", "nowrap").appendChild(editable(o, "shop_order_date", "date"));
+  td(tr, "Supplier").appendChild(editable(o, "supplier", "text", { list: "suppliers" }));
+  td(tr, "Order #").appendChild(editable(o, "supplier_order_no", "text"));
+  td(tr, "Invoice #").appendChild(editable(o, "invoice_no", "text"));
+  td(tr, "Price", "num").appendChild(editable(o, "price", "number"));
+  td(tr, "Paid").appendChild(checkbox(o, "paid"));
+  td(tr, "Out").appendChild(checkbox(o, "out_the_door"));
+  td(tr, "Notes", "col-notes").appendChild(editable(o, "notes", "text"));
+
+  const del = document.createElement("button");
+  del.textContent = "×";
+  del.title = "Remove this order";
+  del.addEventListener("click", () => removeOrder(o, tr));
+  td(tr, "Remove").appendChild(del);
+
+  return tr;
+}
+
+// Date on top, time and age underneath. The age is the useful part on the
+// pending queue -- "9 days" is what makes someone go and place the order.
+function cameIn(o) {
+  const wrap = document.createElement("div");
+  if (!o.submitted_at) {
+    wrap.innerHTML = '<span style="color:#c3c8ce">unknown</span>';
+    return wrap;
+  }
+
+  const d = new Date(o.submitted_at);
+  const top = document.createElement("div");
+  top.textContent = `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
+  wrap.appendChild(top);
+
+  const sub = document.createElement("div");
+  sub.className = "sub";
+  sub.textContent = prettyClock(d) + (o.shop_order_date ? "" : " · " + waited(d));
+  wrap.appendChild(sub);
+
+  wrap.title = d.toLocaleString();
+  return wrap;
+}
+
+function prettyClock(d) {
+  let h = d.getHours();
+  const ap = h >= 12 ? "p" : "a";
+  h = h % 12 || 12;
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return m === "00" ? `${h}${ap}` : `${h}:${m}${ap}`;
+}
+
+// Whole days, measured between calendar days rather than instants -- an order
+// taken at 6pm yesterday should read "1 day", not "0".
+function waited(then) {
+  const now = new Date();
+  const a = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+  const b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((b - a) / 86400000);
+  if (days <= 0) return "today";
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
+
+function sourceBadge(o) {
+  const meta = SOURCES[o.source];
+  const el = document.createElement("span");
+  el.className = "badge src " + (meta ? meta.cls : "src-import");
+  // An unrecognised value is shown as-is rather than swallowed: a new intake
+  // added later should be visible on the page, not silently blank.
+  el.textContent = meta ? meta.label : (o.source || "—");
+  el.title = "Order source: " + el.textContent;
+  return el;
+}
+
+function td(tr, label, cls) {
+  const cell = document.createElement("td");
+  if (label) cell.dataset.label = label;
+  if (cls) cell.className = cls;
+  tr.appendChild(cell);
+  return cell;
+}
+
+// ---------------------------------------------------------------------------
+// Inline editing
+// ---------------------------------------------------------------------------
+
+function display(field, value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (field === "price") return money(value);
+  if (field === "shop_order_date") return shortDate(value);
+  return String(value);
+}
+
+function editable(order, field, type, opts = {}) {
+  const span = document.createElement("span");
+  span.className = "cell";
+  const paint = () => {
+    const text = field === "customer_name" && order.is_stock ? "Stock" : display(field, order[field]);
+    span.textContent = text;
+    span.classList.toggle("empty", text === "");
+  };
+  paint();
+
+  span.addEventListener("click", () => {
+    if (span.querySelector("input,select")) return;
+
+    const input =
+      type === "select"
+        ? Object.assign(document.createElement("select"), {})
+        : Object.assign(document.createElement("input"), { type });
+
+    if (type === "select") {
+      for (const v of opts.options) {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v || "—";
+        input.appendChild(o);
+      }
+      input.value = order[field] || "";
+    } else {
+      if (opts.list) input.setAttribute("list", opts.list);
+      if (type === "number") input.step = field === "price" ? "0.01" : "1";
+      input.value = order[field] === null || order[field] === undefined ? "" : order[field];
+    }
+
+    span.textContent = "";
+    span.appendChild(input);
+    input.focus();
+    if (input.select) input.select();
+
+    let settled = false;
+    const commit = async () => {
+      if (settled) return;
+      settled = true;
+      let value = input.value.trim();
+      if (value === "") value = null;
+      else if (type === "number") value = Number(value);
+
+      if (field === "customer_name" && !value) {
+        paint();
+        showError(new Error("Enter a customer name, or Stock to keep this as shop stock."));
+        return;
+      }
+      if (value === order[field] && field !== "customer_name") return paint();
+
+      span.classList.add("saving");
+      try {
+        const patch = { [field]: value };
+        if (field === "customer_name") {
+          patch.is_stock = ["stock", "shop stock"].includes(value.toLowerCase());
+          if (patch.is_stock) patch.customer_name = "Stock";
+        }
+        await db.update("orders", `id=eq.${order.id}`, patch);
+        Object.assign(order, patch);
+        span.classList.remove("saving", "saveerr");
+        paint();
+        // Clearing or setting the shop order date moves the row between the
+        // pending queue and the placed list, so the page has to re-sort.
+        if (field === "shop_order_date" || field === "customer_name") render();
+      } catch (err) {
+        span.classList.remove("saving");
+        span.classList.add("saveerr");
+        paint();
+        showError(err);
+      }
+    };
+
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      if (e.key === "Escape") { settled = true; paint(); }
+    });
+  });
+
+  return span;
+}
+
+function checkbox(order, field) {
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = !!order[field];
+  cb.addEventListener("change", async () => {
+    const value = cb.checked;
+    try {
+      await db.update("orders", `id=eq.${order.id}`, { [field]: value });
+      order[field] = value;
+      if (field === "out_the_door") render();
+    } catch (err) {
+      cb.checked = !value;   // put it back
+      showError(err);
+    }
+  });
+  return cb;
+}
+
+async function removeOrder(order, tr) {
+  const who = order.is_stock ? "Stock" : order.customer_name;
+  if (!confirm(`Remove this order?\n\n${who} — ${order.item}\n\nIt is hidden, not erased, and can be restored.`)) {
+    return;
+  }
+  try {
+    await db.softDelete("orders", order.id);
+    ORDERS = ORDERS.filter((o) => o.id !== order.id);
+    SELECTED.delete(order.id);
+    render();
+  } catch (err) {
+    showError(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bulk "mark as ordered"
+//
+// Amy places one distributor order covering dozens of items, then records the
+// same supplier / order # / invoice # against every one of them. In the
+// workbook that meant typing the same four values 38 times.
+// ---------------------------------------------------------------------------
+
+function updateBulkBar() {
+  $("selcount").textContent = SELECTED.size;
+  $("bulkbar").classList.toggle("hidden", SELECTED.size === 0);
+}
+
+async function applyBulk() {
+  const patch = {};
+  if ($("b_date").value) patch.shop_order_date = $("b_date").value;
+  if ($("b_supplier").value.trim()) patch.supplier = $("b_supplier").value.trim();
+  if ($("b_order").value.trim()) patch.supplier_order_no = $("b_order").value.trim();
+  if ($("b_invoice").value.trim()) patch.invoice_no = $("b_invoice").value.trim();
+
+  if (!Object.keys(patch).length) {
+    return showError(new Error("Fill in at least one field to apply."));
+  }
+
+  const ids = [...SELECTED];
+  const btn = $("b_apply");
+  btn.disabled = true;
+  btn.textContent = "Applying…";
+
+  try {
+    // One request for the whole batch.
+    await db.update("orders", `id=in.(${ids.join(",")})`, patch);
+    for (const o of ORDERS) {
+      if (SELECTED.has(o.id)) Object.assign(o, patch);
+    }
+    clearBulk();
+    render();
+  } catch (err) {
+    showError(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Apply to selected";
+  }
+}
+
+function clearBulk() {
+  SELECTED.clear();
+  $("checkall").checked = false;
+  for (const id of ["b_date", "b_supplier", "b_order", "b_invoice"]) $(id).value = "";
+}
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+
+function exportCsv() {
+  const rows = visible();
+  const cols = [
+    "submitted_at", "source",
+    "customer_name", "item", "quantity", "phone", "order_location",
+    "pickup_location", "shop_order_date", "supplier", "supplier_order_no",
+    "invoice_no", "price", "paid", "out_the_door", "notes",
+  ];
+  const esc = (v) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const csv = [cols.join(",")]
+    .concat(rows.map((o) => cols.map((c) => esc(o[c])).join(",")))
+    .join("\n");
+
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// Wiring
+// ---------------------------------------------------------------------------
+
+let searchTimer;
+$("search").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(render, 150);
+});
+
+$("quarter").addEventListener("change", load);
+$("location").addEventListener("change", render);
+$("source").addEventListener("change", render);
+$("status").addEventListener("change", render);
+$("export").addEventListener("click", exportCsv);
+$("b_apply").addEventListener("click", applyBulk);
+$("b_clear").addEventListener("click", () => { clearBulk(); render(); });
+
+$("checkall").addEventListener("change", (e) => {
+  const rows = visible();
+  if (e.target.checked) rows.forEach((o) => SELECTED.add(o.id));
+  else SELECTED.clear();
+  render();
+});
+
+(async function init() {
+  try {
+    await loadQuarters();
+    await load();
+    loadSuggestions();   // not worth blocking the page on
+  } catch (err) {
+    showError(err);
+  }
+})();
+
+receiving.watch(load, () => !SELECTED.size && !document.querySelector('dialog[open]') && !document.querySelector('td input:focus, td select:focus'));
