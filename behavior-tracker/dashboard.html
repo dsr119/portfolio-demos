@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../storage-shim.js"></script>
+<meta name="robots" content="noindex">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard — Demo District Student Behavior Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.__TRACKER_MODE__="goals"</script><script src="demo-client.js"></script>
+    <script src="chart.umd.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--primary:#2D5B7B;--primary-dark:#1e3a52;--secondary:#F4A259;--accent:#E76F51;--success:#52B788;--success-dark:#40916C;--bg:#F0F4F8;--surface:#FFFFFF;--surface-2:#F8F9FA;--text:#212529;--text-light:#6C757D;--border:#DEE2E6;--shadow-sm:0 2px 8px rgba(0,0,0,0.06);--shadow-md:0 4px 16px rgba(0,0,0,0.10);--radius:14px}
+        body{font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .topbar{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:sticky;top:0;z-index:100}
+        .topbar-logo{font-family:'Public Sans',sans-serif;font-size:1rem;font-weight:700;color:white}.topbar-logo span{color:var(--secondary)}
+        .page-badge{background:rgba(82,183,136,0.22);border:1px solid rgba(82,183,136,0.4);color:#a8f0cc;font-family:'Public Sans',sans-serif;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:0.2rem 0.6rem;border-radius:20px}
+        .topbar-left{display:flex;align-items:center;gap:1rem}.topbar-nav{display:flex;gap:0.5rem}
+        .nav-link{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.84rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+        .nav-link:hover{background:rgba(255,255,255,0.2);color:white}
+        .page-wrap{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 5rem}
+        .selector-panel{background:var(--surface);border-radius:var(--radius);padding:1.75rem 2rem;box-shadow:var(--shadow-sm);margin-bottom:2rem;display:grid;grid-template-columns:1fr 1fr auto;gap:1.25rem;align-items:flex-end}
+        @media(max-width:700px){.selector-panel{grid-template-columns:1fr}}
+        .sel-group{display:flex;flex-direction:column;gap:0.4rem}
+        .sel-group label{font-size:0.8rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);font-weight:700}
+        .sel-group select,.sel-group input[type="date"]{padding:0.75rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Public Sans',sans-serif;font-size:1rem;background:var(--surface-2);color:var(--text);transition:all 0.2s;cursor:pointer}
+        .sel-group select:focus,.sel-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,91,123,0.1);background:var(--surface)}
+        .load-btn{padding:0.75rem 1.75rem;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:white;border:none;border-radius:10px;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.25s;box-shadow:0 2px 8px rgba(45,91,123,0.25);white-space:nowrap;height:fit-content}
+        .load-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(45,91,123,0.35)}.load-btn:disabled{background:var(--border);cursor:not-allowed;transform:none;box-shadow:none}
+        .identity-card{background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:var(--radius);padding:1.75rem 2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+        .identity-avatar{width:64px;height:64px;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:white;flex-shrink:0;font-family:'Public Sans',sans-serif}
+        .identity-info h2{font-size:1.5rem;font-weight:700;color:white}.identity-meta{color:rgba(255,255,255,0.65);font-size:0.85rem;font-family:'Public Sans',sans-serif;margin-top:0.2rem}
+        .identity-pbis{margin-left:auto;background:rgba(82,183,136,0.25);border:1px solid rgba(82,183,136,0.5);color:#a8f0cc;padding:0.3rem 0.8rem;border-radius:20px;font-size:0.78rem;font-family:'Public Sans',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0}
+        .section-header{display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem}
+        .section-header h3{font-size:1rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.07em;color:var(--primary);font-weight:700}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+        .stat-card{background:var(--surface);border-radius:var(--radius);padding:1.25rem 1.5rem;box-shadow:var(--shadow-sm);}
+        .stat-label{font-family:'Public Sans',sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light)}
+        .stat-value{font-size:2rem;font-weight:700;color:var(--primary);line-height:1.1;margin-top:0.25rem}
+        .stat-card.green{}.stat-card.green .stat-value{color:var(--success-dark)}
+        .stat-card.orange{}.stat-card.orange .stat-value{color:var(--secondary)}
+        .stat-card.red{}.stat-card.red .stat-value{color:var(--accent)}
+        .att-section{background:var(--surface);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.5rem}
+        .att-dot-grid{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem}
+        .att-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;cursor:help;transition:transform 0.15s}
+        .att-dot:hover{transform:scale(1.2)}
+        .att-dot.present{background:#D4EDDA;color:#1A6535}.att-dot.absent{background:#FFF3CD;color:#856404}.att-dot.suspended{background:#F8D7DA;color:#842029}
+        .paws-section{background:var(--surface);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.5rem}
+        .paws-bars{display:flex;flex-direction:column;gap:1rem;margin-top:0.75rem}
+        .paws-bar-item{display:grid;grid-template-columns:140px 1fr 60px auto auto;align-items:center;gap:0.75rem}
+        .paws-bar-label{font-size:0.85rem;font-weight:600;color:var(--text)}
+        .bar-track{height:10px;background:var(--border);border-radius:20px;overflow:hidden}
+        .bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--primary),#4a8db5);transition:width 0.6s ease}
+        .bar-fill.high{background:linear-gradient(90deg,var(--success-dark),var(--success))}.bar-fill.mid{background:linear-gradient(90deg,#b07a00,var(--secondary))}.bar-fill.low{background:linear-gradient(90deg,#a01,var(--accent))}
+        .bar-pct{font-family:'Public Sans',sans-serif;font-size:0.78rem;font-weight:700;color:var(--primary);text-align:right}
+        .custom-q-section{background:var(--surface);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.5rem}
+        .custom-q-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;margin-top:0.75rem}
+        .custom-q-card{background:var(--surface-2);border:2px solid var(--border);border-radius:12px;padding:1.25rem;display:flex;flex-direction:column;gap:0}
+        .custom-q-title{font-size:0.75rem;font-weight:700;color:var(--primary);font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.85rem}
+        .cq-row{display:flex;align-items:center;gap:10px;padding:0.4rem 0;border-bottom:1px solid var(--border)}
+        .cq-row:last-child{border-bottom:none}
+        .cq-date{font-family:'Public Sans',sans-serif;font-size:0.72rem;color:var(--text-light);width:48px;flex-shrink:0}
+        .cq-raw-val{font-size:0.88rem;font-weight:600;color:var(--primary)}
+
+        .cq-chart-wrap{position:relative;height:120px;width:100%;margin-bottom:0.85rem}
+        .cq-num-row{display:flex;justify-content:space-between;align-items:center;padding:0.35rem 0;border-bottom:1px solid var(--border);font-size:0.82rem}
+        .cq-num-row:last-child{border-bottom:none}
+        .cq-num-val{font-weight:700;color:var(--primary)}
+        .history-section{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.5rem}
+        .history-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:1rem}
+        .history-header h3{font-size:1rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.07em;color:var(--primary);font-weight:700}
+        .history-scroll{overflow-x:auto}
+        .history-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+        .history-table thead tr{background:linear-gradient(135deg,var(--primary),var(--primary-dark))}
+        .history-table thead th{padding:0.75rem 1rem;text-align:left;font-family:'Public Sans',sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.85);white-space:nowrap}
+        .history-table tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s}
+        .history-table tbody tr:hover{background:#F0F4F8}
+        .history-table tbody td{padding:0.65rem 1rem;vertical-align:middle}
+        .status-pill{display:inline-block;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap}
+        .status-pill.present{background:#D4EDDA;color:#1A6535}.status-pill.absent{background:#FFF3CD;color:#856404}.status-pill.suspended{background:#F8D7DA;color:#842029}
+        .pct-badge{display:inline-block;padding:0.15rem 0.45rem;border-radius:12px;font-size:0.7rem;font-weight:700}
+        .pct-high{background:#D4EDDA;color:#1A6535}.pct-mid{background:#FFF3CD;color:#856404}.pct-low{background:#F8D7DA;color:#842029}.pct-na{background:#E9ECEF;color:#6C757D}
+        .hidden{display:none}
+        .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-row{display:flex;align-items:center;gap:0.75rem;color:var(--text-light);padding:2rem;font-style:italic}
+        /* PAWS trend chart */
+        .paws-trend-wrap{margin-bottom:1.25rem;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1rem 1rem 0.5rem;position:relative;height:180px}
+        .paws-trend-label{font-family:'Public Sans',sans-serif;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);margin-bottom:0.6rem}
+        /* PAWS sum/avg pills */
+        .paws-stat-pill{font-family:'Public Sans',sans-serif;font-size:0.7rem;font-weight:700;color:var(--primary);background:rgba(45,91,123,0.08);border:1px solid rgba(45,91,123,0.15);border-radius:6px;padding:0.2rem 0.5rem;white-space:nowrap}
+        .paws-avg-pill{color:var(--success-dark);background:rgba(82,183,136,0.1);border-color:rgba(82,183,136,0.25)}
+        /* Custom Q sum/avg row */
+        .cq-stat-row{display:flex;gap:0.5rem;margin-top:0.75rem;padding-top:0.75rem;border-top:2px solid var(--border)}
+        .cq-stat-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.2rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.25rem}
+        .cq-stat-label{font-family:'Public Sans',sans-serif;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light)}
+        .cq-stat-val{font-family:'Public Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--primary)}
+        .report-btn{padding:0.45rem 1.1rem;background:linear-gradient(135deg,var(--secondary),#d4822a);color:white;border:none;border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+        .report-btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(244,162,89,0.35)}
+        .history-table tfoot tr{background:var(--surface-2);border-top:2px solid var(--primary)}
+        .history-table tfoot td{padding:0.65rem 1rem;font-family:'Public Sans',sans-serif;font-size:0.75rem;font-weight:700;color:var(--primary);white-space:nowrap}
+        @media print{
+            .topbar,.selector-panel,.report-btn,#loadBtn,#emptyState,#loadingState{display:none!important}
+            body{background:white}
+            .page-wrap{padding:0.5rem;max-width:100%}
+            .history-section{box-shadow:none;border:1px solid #ccc}
+            .history-table thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        }
+    </style>
+    <link rel="stylesheet" href="assets/brand.css">
+    <link rel="icon" href="assets/logo.svg" type="image/png">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a class="topbar-logo" href="intakeForm.html" aria-label="Demo District Student Behavior Tracker home">
+      <img src="assets/logo.svg" alt="Demo District">
+      <span class="brand-copy"><strong>Student Behavior Tracker</strong><small>Day Treatment Program</small></span>
+    </a>
+    <span class="page-badge">Dashboard</span>
+  </div>
+  <div class="topbar-nav">
+    <a href="admin.html" class="nav-link">Admin</a>
+    <a href="pointbank.html" class="nav-link">Point Bank</a>
+    <a href="students.html" class="nav-link">Students</a>
+        <a href="intakeForm.html" class="nav-link">Intake Form</a>
+  </div>
+</nav>
+<div class="page-wrap">
+    <div class="selector-panel">
+        <div class="sel-group"><label for="selStudent">Student</label><select id="selStudent"><option value="">— Select Student —</option></select></div>
+        <div class="sel-group"><label>Date Range</label><div style="display:flex;gap:0.5rem;align-items:center;"><input type="date" id="selDateFrom" style="flex:1"><span style="color:var(--text-light);font-size:0.85rem;">–</span><input type="date" id="selDateTo" style="flex:1"></div></div>
+        <button class="load-btn" id="loadBtn" disabled>Load Data</button>
+    </div>
+    <div id="dashContent" class="hidden">
+        <div class="identity-card" id="identityCard"></div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="att-section"><div class="section-header"><h3>Attendance</h3></div><div class="att-dot-grid" id="attDotGrid"></div></div>
+        <div class="paws-section hidden" id="pawsSection"><div class="section-header"><h3>PAWS Overview</h3></div><div class="paws-bars" id="pawsBars"></div></div>
+        <div class="custom-q-section hidden" id="customQsSection"><div class="section-header"><h3>Tx Goals</h3></div><div class="custom-q-grid" id="customQsGrid"></div></div>
+        <div class="custom-q-section hidden" id="stepDaySection"><div class="section-header"><h3>Step, Day Progress</h3></div><div id="stepDaySummary" class="cq-stat-row" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:1rem"></div><div class="cq-chart-wrap" style="height:240px"><canvas id="stepDayCanvas"></canvas></div></div>
+        <div class="history-section"><div class="history-header"><h3>Full History</h3><button class="report-btn" id="reportBtn" onclick="printReport()">Print Report</button></div><div class="history-scroll"><table class="history-table"><thead id="historyTableHead"><tr><th>Date</th><th>Staff</th><th>Attendance</th><th>Practice</th><th>Act</th><th>Work</th><th>Respect</th><th>Total</th><th>Notes</th></tr></thead><tbody id="historyTableBody"></tbody><tfoot id="historyTableFoot"></tfoot></table></div></div>
+    </div>
+    <div id="loadingState" class="hidden"><div class="loading-row"><div class="spinner"></div>Loading student data…</div></div>
+    <div id="emptyState" style="text-align:center;padding:4rem 2rem;color:var(--text-light);">Select a student above and click <strong>Load Data</strong>.</div>
+</div>
+<script>
+const SUPABASE_URL = 'demo://in-memory';
+const SUPABASE_ANON = 'demo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allRecords=[], currentStudent=null, studentList=[];
+
+async function fetchConfig() {
+    const KEY='php_st_config_sql_v3',TTL=30*60*1000;
+    try{const c=sessionStorage.getItem(KEY);if(c){const{ts,data}=JSON.parse(c);if(Date.now()-ts<TTL)return data;}}catch(e){}
+    const [s,c,st]=await Promise.all([
+        sb.from('staff').select('id,name').order('name'),
+        sb.from('classrooms').select('id,room_number').order('room_number'),
+        sb.from('students').select('id,classroom_id,name,active,use_pbis,use_points,use_step_day,tx_goal_1_name,tx_goal_2_name').eq('active',true).order('name'),
+    ]);
+    const data={staff:s.data||[],classrooms:c.data||[],students:st.data||[]};
+    try{sessionStorage.setItem(KEY,JSON.stringify({ts:Date.now(),data}));}catch(e){}
+    return data;
+}
+async function loadConfig() {
+    try {
+        const cfg = await fetchConfig();
+        studentList = cfg.students.map(s=>({
+            id:s.id, name:s.name, classroom_id:s.classroom_id,
+            usePBIS:true, usePoints:s.use_points, useStepDay:!!s.use_step_day, txGoals:[s.tx_goal_1_name||'',s.tx_goal_2_name||''],
+            classroomName: (cfg.classrooms.find(c=>c.id===s.classroom_id)||{}).room_number||'—',
+        }));
+        const sel=document.getElementById('selStudent');
+        studentList.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sel.appendChild(o);});
+        sel.addEventListener('change',()=>document.getElementById('loadBtn').disabled=!sel.value);
+    } catch(err) { alert('Error loading config: '+err.message); }
+}
+
+document.getElementById('loadBtn').addEventListener('click', loadStudentData);
+window.addEventListener('DOMContentLoaded', loadConfig);
+
+async function loadStudentData() {
+    const studentId=parseInt(document.getElementById('selStudent').value);
+    if(!studentId)return;
+    currentStudent=studentList.find(s=>s.id===studentId);
+    if(!currentStudent)return;
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('dashContent').classList.add('hidden');
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('loadBtn').disabled=true;
+
+    try {
+        let query=sb.from('submissions')
+            .select('id,entry_date,attendance_status,practice_points,practice_possible,act_points,act_possible,work_points,work_possible,respect_points,respect_possible,notes,staff:staff_id(name),tx_goal_1_progress,tx_goal_1_score,tx_goal_1_comment,tx_goal_2_progress,tx_goal_2_score,tx_goal_2_comment')
+            .eq('student_id',studentId).order('entry_date',{ascending:false});
+        const from=document.getElementById('selDateFrom').value;
+        const to  =document.getElementById('selDateTo').value;
+        if(from) query=query.gte('entry_date',from);
+        if(to)   query=query.lte('entry_date',to);
+        const {data,error}=await query;
+        if(error)throw error;
+        allRecords=(data||[]).map(r=>({
+            entryDate:r.entry_date, attendance:r.attendance_status,
+            staffName:r.staff?.name||'—',
+            practicePoints:r.practice_points, practicePossible:r.practice_possible,
+            actPoints:r.act_points, actPossible:r.act_possible,
+            workPoints:r.work_points, workPossible:r.work_possible,
+            respectPoints:r.respect_points, respectPossible:r.respect_possible,
+            notes:r.notes,
+            stepDay:r.step_day||'',
+            txGoals:[1,2].map(n=>({progress:r[`tx_goal_${n}_progress`]||'',score:r[`tx_goal_${n}_score`],comment:r[`tx_goal_${n}_comment`]||''})),
+        }));
+        renderAll();
+    } catch(err) { alert('Error loading data: '+err.message); }
+    finally { document.getElementById('loadingState').classList.add('hidden'); document.getElementById('loadBtn').disabled=false; }
+}
+
+function renderAll() {
+    document.getElementById('dashContent').classList.remove('hidden');
+    hasStepDay=!!currentStudent.useStepDay||allRecords.some(r=>r.stepDay);
+    renderIdentity(); renderStats(); renderAttDots(); renderPAWS(); renderTxGoals(); renderStepDay(); renderHistoryTable(); renderHistorySummary();
+}
+
+// ── Step, Day ("5,3" = step 5, day 3) ─────────────────────────
+let hasStepDay=false;
+function splitStepDay(v){
+    const m=/^\s*(\d+)\s*,\s*(\d+)\s*$/.exec(v||'');
+    return m?{step:parseInt(m[1],10),day:parseInt(m[2],10)}:null;
+}
+function renderStepDay() {
+    const sec=document.getElementById('stepDaySection');
+    if(window._stepDayChart){try{window._stepDayChart.destroy();}catch(e){} window._stepDayChart=null;}
+    const pts=allRecords.filter(r=>r.attendance==='yes').map(r=>({date:r.entryDate,...splitStepDay(r.stepDay)})).filter(p=>p.step!==undefined).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!pts.length){sec.classList.add('hidden');return;}
+    sec.classList.remove('hidden');
+    const first=pts[0], last=pts[pts.length-1];
+    const stat=(label,val)=>`<div class="cq-stat-item"><span class="cq-stat-label">${label}</span><span class="cq-stat-val">${val}</span></div>`;
+    document.getElementById('stepDaySummary').innerHTML=
+        stat('Current',`Step ${last.step}, Day ${last.day}`)+
+        stat('First Recorded',`Step ${first.step}, Day ${first.day}`)+
+        stat('Highest Step',Math.max(...pts.map(p=>p.step)))+
+        stat('Entries',pts.length);
+    const maxVal=Math.max(...pts.map(p=>Math.max(p.step,p.day)));
+    window._stepDayChart=new Chart(document.getElementById('stepDayCanvas'),{
+        type:'line',
+        data:{
+            labels:pts.map(p=>shortDate(p.date)),
+            datasets:[
+                {label:'Step',data:pts.map(p=>p.step),borderColor:'#7A343E',backgroundColor:'#7A343E',borderWidth:2,stepped:true,pointRadius:pts.length<=20?4:2,pointHoverRadius:6,fill:false},
+                {label:'Day',data:pts.map(p=>p.day),borderColor:'#B98A2F',backgroundColor:'#B98A2F',borderWidth:2,pointRadius:pts.length<=20?4:2,pointHoverRadius:6,fill:false,tension:0},
+            ]
+        },
+        options:{
+            responsive:true,maintainAspectRatio:false,animation:false,
+            plugins:{
+                legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,padding:8}},
+                tooltip:{callbacks:{footer:items=>{const p=pts[items[0].dataIndex];return `Step ${p.step}, Day ${p.day}`;}}}
+            },
+            scales:{
+                x:{ticks:{font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:Math.min(pts.length,12)},grid:{display:false}},
+                y:{min:0,suggestedMax:maxVal+1,ticks:{font:{size:10},stepSize:1,precision:0},grid:{color:'rgba(0,0,0,0.05)'}}
+            }
+        }
+    });
+}
+
+function renderHistorySummary() {
+    const foot = document.getElementById('historyTableFoot');
+    if (!foot) return;
+    // Only include present-day records for PAWS sums/averages
+    const presentRecs = allRecords.filter(r => r.attendance === 'yes');
+    if (!presentRecs.length) { foot.innerHTML = ''; return; }
+
+    const sumCol = (key) => presentRecs.reduce((a, r) => {
+        const v = parseFloat(r[key]); return isNaN(v) ? a : a + v;
+    }, 0);
+    const avgCol = (key) => {
+        const vals = presentRecs.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
+        return vals.length ? (vals.reduce((a,b)=>a+b,0) / vals.length) : null;
+    };
+    const fmtAvg = v => (v === null || v === undefined || isNaN(Number(v))) ? '—' : Number(v) % 1 === 0 ? Number(v) : Number(v).toFixed(2);
+
+    // Totals row
+    const sumPrac = sumCol('practicePoints'), sumPracPos = sumCol('practicePossible');
+    const sumAct  = sumCol('actPoints'),      sumActPos  = sumCol('actPossible');
+    const sumWork = sumCol('workPoints'),     sumWorkPos = sumCol('workPossible');
+    const sumResp = sumCol('respectPoints'),  sumRespPos = sumCol('respectPossible');
+    const grandE  = sumPrac + sumAct + sumWork + sumResp;
+    const grandP  = sumPracPos + sumActPos + sumWorkPos + sumRespPos;
+    const grandPct = grandP > 0 ? Math.round(grandE / grandP * 100) : null;
+    const grandCls = grandPct === null ? 'pct-na' : grandPct >= 80 ? 'pct-high' : grandPct >= 60 ? 'pct-mid' : 'pct-low';
+
+    // Averages row
+    const avgPrac = avgCol('practicePoints'), avgPracPos = avgCol('practicePossible');
+    const avgAct  = avgCol('actPoints'),      avgActPos  = avgCol('actPossible');
+    const avgWork = avgCol('workPoints'),     avgWorkPos = avgCol('workPossible');
+    const avgResp = avgCol('respectPoints'),  avgRespPos = avgCol('respectPossible');
+
+    const cellSum = (e, p) => {
+        const pct = p > 0 ? Math.round(e / p * 100) : null;
+        const cls = pct === null ? 'pct-na' : pct >= 80 ? 'pct-high' : pct >= 60 ? 'pct-mid' : 'pct-low';
+        return `<span style="font-family:'Public Sans',sans-serif;font-size:0.78rem;">${e}/${p}</span> <span class="pct-badge ${cls}">${pct !== null ? pct + '%' : ''}</span>`;
+    };
+    const cellAvg = (e, p) => {
+        if (e === null) return '—';
+        const fe = parseFloat(fmtAvg(e)), fp = parseFloat(fmtAvg(p));
+        const pct = fp > 0 ? Math.round(fe / fp * 100) : null;
+        const cls = pct === null ? 'pct-na' : pct >= 80 ? 'pct-high' : pct >= 60 ? 'pct-mid' : 'pct-low';
+        return `<span style="font-family:'Public Sans',sans-serif;font-size:0.78rem;">${fmtAvg(e)}/${fmtAvg(p)}</span> <span class="pct-badge ${cls}">${pct !== null ? pct + '%' : ''}</span>`;
+    };
+
+    foot.innerHTML = `
+        <tr>
+            <td colspan="3" class="foot-label">SUM (${presentRecs.length} present days)</td>
+            <td>${currentStudent.usePBIS ? cellSum(sumPrac, sumPracPos) : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellSum(sumAct,  sumActPos)  : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellSum(sumWork, sumWorkPos) : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellSum(sumResp, sumRespPos) : '—'}</td>
+            <td>${currentStudent.usePBIS && grandP > 0 ? `<strong>${grandE}/${grandP}</strong> <span class="pct-badge ${grandCls}">${grandPct}%</span>` : '—'}</td>
+            ${hasStepDay ? '<td></td>' : ''}
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="3" class="foot-label">AVERAGE (per present day)</td>
+            <td>${currentStudent.usePBIS ? cellAvg(avgPrac, avgPracPos) : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellAvg(avgAct,  avgActPos)  : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellAvg(avgWork, avgWorkPos) : '—'}</td>
+            <td>${currentStudent.usePBIS ? cellAvg(avgResp, avgRespPos) : '—'}</td>
+            ${hasStepDay ? '<td></td>' : ''}
+            <td></td>
+            <td></td>
+        </tr>`;
+}
+
+function printReport() {
+    window.print();
+}
+
+function renderIdentity() {
+    const s=currentStudent;
+    const initials=s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    document.getElementById('identityCard').innerHTML=`
+        <div class="identity-avatar">${initials}</div>
+        <div class="identity-info"><h2>${esc(s.name)}</h2><div class="identity-meta">Room ${esc(s.classroomName)} · ${allRecords.length} entries</div></div>
+        ${s.usePBIS?'<div class="identity-pbis">PBIS Active</div>':''}`;
+}
+
+function renderStats() {
+    const total=allRecords.length;
+    const present=allRecords.filter(r=>r.attendance==='yes').length;
+    const absent=allRecords.filter(r=>r.attendance==='absent').length;
+    const suspended=allRecords.filter(r=>r.attendance==='suspended').length;
+    const presentRecs=allRecords.filter(r=>r.attendance==='yes');
+    let avgPaws='—';
+    if(currentStudent.usePBIS&&presentRecs.length){
+        const pcts=presentRecs.map(r=>{
+            const e=[r.practicePoints,r.actPoints,r.workPoints,r.respectPoints].map(Number);
+            const p=[r.practicePossible,r.actPossible,r.workPossible,r.respectPossible].map(Number);
+            const tp=p.reduce((a,b)=>a+b,0);
+            return tp>0?e.reduce((a,b)=>a+b,0)/tp*100:null;
+        }).filter(v=>v!==null);
+        if(pcts.length) avgPaws=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length)+'%';
+    }
+    document.getElementById('statsGrid').innerHTML=`
+        <div class="stat-card"><div class="stat-label">Total Entries</div><div class="stat-value">${total}</div></div>
+        <div class="stat-card green"><div class="stat-label">Present</div><div class="stat-value">${present}</div></div>
+        <div class="stat-card orange"><div class="stat-label">Absent</div><div class="stat-value">${absent}</div></div>
+        <div class="stat-card red"><div class="stat-label">Suspended</div><div class="stat-value">${suspended}</div></div>
+        <div class="stat-card"><div class="stat-label">Avg PAWS</div><div class="stat-value">${avgPaws}</div></div>`;
+}
+
+function renderAttDots() {
+    const grid=document.getElementById('attDotGrid');
+    if(!allRecords.length){grid.innerHTML='<p style="color:var(--text-light);font-size:0.85rem;">No entries.</p>';return;}
+    const sorted=[...allRecords].sort((a,b)=>a.entryDate.localeCompare(b.entryDate));
+    grid.innerHTML=sorted.map(r=>{
+        const label=r.attendance==='yes'?'P':r.attendance==='absent'?'A':'S';
+        const cls=r.attendance==='yes'?'present':r.attendance==='absent'?'absent':'suspended';
+        return `<div class="att-dot ${cls}" title="${fmtDate(r.entryDate)} – ${esc(r.staffName)}">${label}</div>`;
+    }).join('');
+}
+
+function renderPAWS() {
+    const sec=document.getElementById('pawsSection');
+    if(!currentStudent.usePBIS){sec.classList.add('hidden');return;}
+    const presentRecs=allRecords.filter(r=>r.attendance==='yes');
+    if(!presentRecs.length){sec.classList.add('hidden');return;}
+    sec.classList.remove('hidden');
+
+    // Destroy old trend chart if exists
+    if(window._pawsTrendChart){try{window._pawsTrendChart.destroy();}catch(e){} window._pawsTrendChart=null;}
+
+    const calcStats=(key,possKey)=>{
+        const vals=presentRecs.map(r=>({e:parseFloat(r[key]),p:parseFloat(r[possKey])})).filter(v=>!isNaN(v.e)&&!isNaN(v.p)&&v.p>0);
+        if(!vals.length)return null;
+        const totE=vals.reduce((a,b)=>a+b.e,0), totP=vals.reduce((a,b)=>a+b.p,0);
+        const avgE=totE/vals.length, avgP=totP/vals.length;
+        const pct=totP>0?Math.round(totE/totP*100):null;
+        return {pct, sumE:totE, sumP:totP, avgE:Number(avgE).toFixed(1), avgP:Number(avgP).toFixed(1), n:vals.length};
+    };
+    const cats=[
+        {label:'Practice Safety', key:'practicePoints', possKey:'practicePossible', color:'#7A343E', stats:calcStats('practicePoints','practicePossible')},
+        {label:'Act Responsibly',  key:'actPoints',      possKey:'actPossible',      color:'#2F6B45', stats:calcStats('actPoints','actPossible')},
+        {label:'Work Hard',        key:'workPoints',     possKey:'workPossible',     color:'#B98A2F', stats:calcStats('workPoints','workPossible')},
+        {label:'Show Respect',     key:'respectPoints',  possKey:'respectPossible',  color:'#4A5A78', stats:calcStats('respectPoints','respectPossible')},
+    ];
+
+    // Build PAWS bars HTML
+    const barsContainer = document.getElementById('pawsBars');
+    barsContainer.innerHTML='';
+
+    // ── Trend chart: daily total PAWS % across the full date range ──
+    const sorted=[...presentRecs].sort((a,b)=>a.entryDate.localeCompare(b.entryDate));
+    if(sorted.length>1){
+        const trendWrap=document.createElement('div');
+        trendWrap.className='paws-trend-wrap';
+        trendWrap.innerHTML='<div class="paws-trend-label">Total PAWS % — by session</div><canvas id="pawsTrendCanvas"></canvas>';
+        barsContainer.appendChild(trendWrap);
+
+        requestAnimationFrame(()=>{
+            const canvas=document.getElementById('pawsTrendCanvas');
+            if(!canvas)return;
+            const labels=sorted.map(r=>shortDate(r.entryDate));
+            const datasets=cats.map(c=>({
+                label:c.label,
+                data:sorted.map(r=>{
+                    const e=parseFloat(r[c.key]),p=parseFloat(r[c.possKey]);
+                    return(!isNaN(e)&&!isNaN(p)&&p>0)?Math.round(e/p*100):null;
+                }),
+                borderColor:c.color,
+                backgroundColor:c.color+'18',
+                borderWidth:2,
+                pointRadius:sorted.length<=20?3:2,
+                pointHoverRadius:5,
+                fill:false,
+                tension:0.3,
+                spanGaps:true,
+            }));
+            const trendDatasets=datasets.flatMap(ds=>{
+                const td=trendDataset(ds.data, ds.borderColor, ds.label+' Trend');
+                return td?[td]:[];
+            });
+            window._pawsTrendChart=new Chart(canvas,{
+                type:'line',
+                data:{labels,datasets:[...datasets,...trendDatasets]},
+                options:{
+                    responsive:true,
+                    maintainAspectRatio:false,
+                    animation:false,
+                    plugins:{
+                        legend:{display:true,position:'bottom',labels:{font:{size:10},boxWidth:10,padding:8}},
+                        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}
+                    },
+                    scales:{
+                        x:{ticks:{font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:Math.min(sorted.length,12)},grid:{display:false}},
+                        y:{min:0,max:100,ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.05)'}}
+                    }
+                }
+            });
+
+        });
+    }
+
+    // ── Aggregate bar rows ──
+    const barsDiv=document.createElement('div');
+    barsDiv.innerHTML=cats.map(c=>{
+        if(!c.stats)return'';
+        const {pct,sumE,sumP,avgE,avgP}=c.stats;
+        const cls=pct>=80?'high':pct>=60?'mid':'low';
+        return `<div class="paws-bar-item">
+            <div class="paws-bar-label">${c.label}</div>
+            <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+            <div class="bar-pct">${pct}%</div>
+            <div class="paws-stat-pill" title="Sum">Σ ${sumE}/${sumP}</div>
+            <div class="paws-stat-pill paws-avg-pill" title="Average per day">x̄ ${avgE}/${avgP}</div>
+        </div>`;
+    }).join('');
+    barsContainer.appendChild(barsDiv);
+}
+
+function renderCustomQuestions() {
+    const sec=document.getElementById('customQsSection');
+    const qs=(currentStudent.questions||[]).filter(q=>q);
+    const presentRecs=allRecords.filter(r=>r.attendance==='yes');
+    if(!qs.length||!presentRecs.length){sec.classList.add('hidden');return;}
+
+    const qData={};
+    qs.forEach(q=>{qData[q]=[];});
+    presentRecs.forEach(r=>{
+        qs.forEach((q,i)=>{
+            const v=(r.customSlots[i]||'').trim();
+            if(!v) return;
+            const isPercent=/\s*%$/.test(v);
+            const stripped=isPercent?v.replace(/\s*%$/,'').trim():v;
+            const n=parseFloat(stripped);
+            qData[q].push((isNaN(n)||v.includes(','))?{date:r.entryDate,val:v,isText:true}:{date:r.entryDate,val:n,isText:false,isPercent});
+        });
+    });
+
+    if(!qs.some(q=>qData[q].length)){sec.classList.add('hidden');return;}
+    sec.classList.remove('hidden');
+
+    const grid=document.getElementById('customQsGrid');
+    grid.innerHTML='';
+    // Destroy any existing Chart.js instances to avoid canvas reuse errors
+    if(window._cqCharts){window._cqCharts.forEach(c=>{try{c.destroy();}catch(e){}});}
+    window._cqCharts=[];
+
+    qs.forEach(q=>{
+        const entries=qData[q];
+        if(!entries.length) return;
+
+        const isStepDay = /\bstep\b|\bday\b/i.test(q) && !/percent|percentage|daily/i.test(q);
+        const nums = entries.filter(e=>!e.isText);
+        const allNumeric = nums.length > 0 && !isStepDay;
+
+        const byDateDesc=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+
+        const card=document.createElement('div');
+        card.className='custom-q-card';
+
+        if(isStepDay){
+            // ── Step / Day: simple raw value list ───────────────
+            // Show all entries for the selected date range
+            const rows=byDateDesc.map(e=>`
+                <div class="cq-row">
+                    <span class="cq-date">${shortDate(e.date)}</span>
+                    <span class="cq-raw-val">${esc(String(e.val))}</span>
+                </div>`).join('');
+            card.innerHTML=`<div class="custom-q-title">${esc(q)}</div>${rows}`;
+
+        } else if(allNumeric){
+            // ── Numeric: line chart (full date range) + full entry list + sum/avg ──────
+            const byDateAsc=[...nums].sort((a,b)=>a.date.localeCompare(b.date));
+            // Use ALL data points — chart reflects the full selected date range
+            const chartPoints=byDateAsc;
+
+            const numVals=nums.map(e=>e.val);
+            const qSum=numVals.reduce((a,b)=>a+b,0);
+            const qAvg=numVals.length ? qSum/numVals.length : null;
+            const fmtN=v=>{const n=Number(v);return(isNaN(n)||v===null||v===undefined)?0:n%1===0?n:parseFloat(n.toFixed(2));};
+            const isPctQ=nums.some(e=>e.isPercent);
+            const fmtVal=v=>(fmtN(v))+(isPctQ?'%':'');
+
+            const canvasId='cqc_'+Math.random().toString(36).slice(2);
+            // Show ALL entries in the list (full date range, newest first)
+            const listRows=byDateDesc.map(e=>`
+                <div class="cq-num-row">
+                    <span class="cq-date">${shortDate(e.date)}</span>
+                    <span class="cq-num-val">${fmtVal(e.val)}</span>
+                </div>`).join('');
+
+            card.innerHTML=`
+                <div class="custom-q-title">${esc(q)}</div>
+                <div class="cq-chart-wrap"><canvas id="${canvasId}"></canvas></div>
+                ${listRows}
+                <div class="cq-stat-row">
+                    <div class="cq-stat-item"><span class="cq-stat-label">SUM</span><span class="cq-stat-val">${fmtVal(qSum)}</span></div>
+                    <div class="cq-stat-item"><span class="cq-stat-label">AVG</span><span class="cq-stat-val">${qAvg!==null?fmtVal(qAvg):'—'}</span></div>
+                    <div class="cq-stat-item"><span class="cq-stat-label">ENTRIES</span><span class="cq-stat-val">${numVals.length}</span></div>
+                </div>`;
+
+            // Render chart after DOM insertion
+            grid.appendChild(card);
+            requestAnimationFrame(()=>{
+                const canvas=document.getElementById(canvasId);
+                if(!canvas) return;
+                const cqVals=chartPoints.map(e=>e.val);
+                const cqTrend=trendDataset(cqVals,'#B98A2F','Trend');
+                const chart=new Chart(canvas,{
+                    type:'line',
+                    data:{
+                        labels:chartPoints.map(e=>shortDate(e.date)),
+                        datasets:[{
+                            data:cqVals,
+                            borderColor:'#7A343E',
+                            backgroundColor:'rgba(122,52,62,0.08)',
+                            borderWidth:2,
+                            pointBackgroundColor:'#7A343E',
+                            pointRadius:3,
+                            pointHoverRadius:5,
+                            fill:true,
+                            tension:0.3,
+                            order:2,
+                        },...(cqTrend?[cqTrend]:[])]
+                    },
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false,
+                        animation:false,
+                        plugins:{legend:{display:false},tooltip:{
+                            callbacks:{label:ctx=>' '+ctx.parsed.y}
+                        }},
+                        scales:{
+                            x:{ticks:{font:{size:10},maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{display:false}},
+                            y:{ticks:{font:{size:10},precision:0},grid:{color:'rgba(0,0,0,0.05)'},beginAtZero:true}
+                        }
+                    }
+                });
+                window._cqCharts.push(chart);
+            });
+            return; // already appended
+
+        } else {
+            // ── Text (non step/day): plain list ─────────────────
+            // Show all entries for the selected date range
+            const rows=byDateDesc.map(e=>`
+                <div class="cq-row">
+                    <span class="cq-date">${shortDate(e.date)}</span>
+                    <span class="cq-raw-val">${esc(String(e.val))}</span>
+                </div>`).join('');
+            card.innerHTML=`<div class="custom-q-title">${esc(q)}</div>${rows}`;
+        }
+
+        grid.appendChild(card);
+    });
+}
+
+function renderTxGoals() {
+    const sec=document.getElementById('customQsSection');
+    const goals=currentStudent.txGoals||[];
+    const presentRecs=allRecords.filter(r=>r.attendance==='yes');
+    if(!presentRecs.length){sec.classList.add('hidden');return;}
+    sec.classList.remove('hidden');
+    const grid=document.getElementById('customQsGrid');
+    grid.innerHTML='';
+    const labels={yes:'Yes, Progress Was Made',partial:'Partial Progress Was Made',no:'No Progress Was Made'};
+    goals.forEach((goalName,i)=>{
+        const entries=presentRecs.map(r=>({date:r.entryDate,...(r.txGoals?.[i]||{})})).filter(e=>e.progress||e.score||e.comment).sort((a,b)=>b.date.localeCompare(a.date));
+        const scores=entries.map(e=>Number(e.score)).filter(n=>!isNaN(n)&&n>0);
+        const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):'—';
+        const counts={yes:0,partial:0,no:0};
+        entries.forEach(e=>{if(counts[e.progress]!==undefined)counts[e.progress]++;});
+        const rows=entries.length?entries.map(e=>`<div class="cq-row" style="align-items:flex-start;flex-wrap:wrap">
+            <span class="cq-date">${shortDate(e.date)}</span>
+            <span class="cq-raw-val" style="flex:1;min-width:180px">${esc(labels[e.progress]||'Not recorded')} · Score ${e.score??'—'}/10${e.comment?`<br><span style="font-weight:400;color:var(--text-light)">${esc(e.comment)}</span>`:''}</span>
+        </div>`).join(''):'<p style="color:var(--text-light);font-size:0.85rem">No Tx Goal entries in this date range.</p>';
+        const card=document.createElement('div');
+        card.className='custom-q-card';
+        card.innerHTML=`<div class="custom-q-title">Tx Goal ${i+1}: ${esc(goalName||'Goal name not configured')}</div>${rows}
+            <div class="cq-stat-row">
+                <div class="cq-stat-item"><span class="cq-stat-label">Avg Score</span><span class="cq-stat-val">${avg}${avg==='—'?'':'/10'}</span></div>
+                <div class="cq-stat-item"><span class="cq-stat-label">Progress</span><span class="cq-stat-val">${counts.yes}</span></div>
+                <div class="cq-stat-item"><span class="cq-stat-label">Partial</span><span class="cq-stat-val">${counts.partial}</span></div>
+                <div class="cq-stat-item"><span class="cq-stat-label">No Progress</span><span class="cq-stat-val">${counts.no}</span></div>
+            </div>`;
+        grid.appendChild(card);
+    });
+}
+
+function shortDate(ds){
+    if(!ds) return '';
+    const d=new Date(ds+'T12:00:00');
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+function renderHistoryTable() {
+    const tbody=document.getElementById('historyTableBody');
+    document.getElementById('historyTableHead').innerHTML=`<tr><th>Date</th><th>Staff</th><th>Attendance</th><th>Practice</th><th>Act</th><th>Work</th><th>Respect</th><th>Total</th>${hasStepDay?'<th>Step, Day</th>':''}<th>Notes</th></tr>`;
+    if(!allRecords.length){tbody.innerHTML=`<tr><td colspan="${hasStepDay?10:9}"style="text-align:center;padding:2rem;color:var(--text-light);">No entries found.</td></tr>`;return;}
+    const sorted=[...allRecords].sort((a,b)=>b.entryDate.localeCompare(a.entryDate));
+    tbody.innerHTML=sorted.map(r=>{
+        const sm={yes:['present','Present'],absent:['absent','Absent'],suspended:['suspended','Suspended']};
+        const [pc,pl]=sm[r.attendance]||['absent',r.attendance||'—'];
+        const cell=(e,p)=>{const ev=parseFloat(e),pv=parseFloat(p);if(isNaN(ev)||isNaN(pv))return'<span style="color:var(--text-light)">—</span>';const pct=pv>0?Math.round(ev/pv*100):null;const cls=pct===null?'pct-na':pct>=80?'pct-high':pct>=60?'pct-mid':'pct-low';return`<span style="font-family:'Public Sans',sans-serif;font-size:0.8rem;">${ev}/${pv}</span> <span class="pct-badge ${cls}">${pct!==null?pct+'%':''}</span>`;};
+        let tot='<span style="color:var(--text-light)">N/A</span>';
+        if(r.attendance==='yes'){const e=[r.practicePoints,r.actPoints,r.workPoints,r.respectPoints].map(parseFloat).filter(v=>!isNaN(v));const p=[r.practicePossible,r.actPossible,r.workPossible,r.respectPossible].map(parseFloat).filter(v=>!isNaN(v));if(e.length===4&&p.length===4){const te=e.reduce((a,b)=>a+b,0),tp=p.reduce((a,b)=>a+b,0);const pct=tp>0?Math.round(te/tp*100):null;const cls=pct===null?'pct-na':pct>=80?'pct-high':pct>=60?'pct-mid':'pct-low';tot=`<strong style="color:var(--primary)">${te}/${tp}</strong> <span class="pct-badge ${cls}">${pct!==null?pct+'%':''}</span>`;}}
+        const noteSnip=r.notes?(r.notes.length>30?r.notes.substring(0,30)+'…':r.notes):'—';
+        return `<tr>
+            <td style="font-family:'Public Sans',sans-serif;font-size:0.78rem;white-space:nowrap;">${fmtDate(r.entryDate)}</td>
+            <td style="font-size:0.82rem;color:var(--text-light);">${esc(r.staffName)}</td>
+            <td><span class="status-pill ${pc}">${pl}</span></td>
+            <td>${r.attendance==='yes'?cell(r.practicePoints,r.practicePossible):'<span style="color:var(--text-light)">—</span>'}</td>
+            <td>${r.attendance==='yes'?cell(r.actPoints,r.actPossible):'<span style="color:var(--text-light)">—</span>'}</td>
+            <td>${r.attendance==='yes'?cell(r.workPoints,r.workPossible):'<span style="color:var(--text-light)">—</span>'}</td>
+            <td>${r.attendance==='yes'?cell(r.respectPoints,r.respectPossible):'<span style="color:var(--text-light)">—</span>'}</td>
+            <td>${tot}</td>
+            ${hasStepDay?`<td style="font-size:0.82rem;white-space:nowrap;">${r.stepDay?esc(r.stepDay):'<span style="color:var(--text-light)">—</span>'}</td>`:''}
+            <td style="font-size:0.78rem;color:var(--text-light);" title="${esc(r.notes||'')}">${noteSnip}</td>
+        </tr>`;
+    }).join('');
+}
+
+function fmtDate(ds){if(!ds)return'—';return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function linReg(vals) {
+    const pts = vals.map((v,i)=>({x:i,y:v})).filter(p=>p.y!==null&&p.y!==undefined&&!isNaN(p.y));
+    if(pts.length<2) return null;
+    const n=pts.length;
+    const sx=pts.reduce((a,p)=>a+p.x,0), sy=pts.reduce((a,p)=>a+p.y,0);
+    const sxy=pts.reduce((a,p)=>a+p.x*p.y,0), sx2=pts.reduce((a,p)=>a+p.x*p.x,0);
+    const denom=n*sx2-sx*sx;
+    if(denom===0) return null;
+    const m=(n*sxy-sx*sy)/denom, b=(sy-m*sx)/n;
+    return x=>m*x+b;
+}
+
+function trendDataset(data, color, label) {
+    const fn=linReg(data);
+    if(!fn) return null;
+    return {
+        label: label||'Trend',
+        data: data.map((_,i)=>parseFloat(fn(i).toFixed(2))),
+        borderColor: color,
+        borderWidth: 2,
+        borderDash: [6,4],
+        backgroundColor: 'transparent',
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        fill: false,
+        tension: 0,
+        order: 1,
+    };
+}
+</script>
+</body>
+</html>

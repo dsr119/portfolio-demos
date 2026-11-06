@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../storage-shim.js"></script>
+<meta name="robots" content="noindex">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance & PAWS Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>window.__TRACKER_MODE__="questions"</script><script src="demo-client.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary:#2D5B7B; --secondary:#F4A259; --accent:#E76F51; --success:#52B788; --bg:#F8F9FA; --surface:#FFFFFF; --text:#212529; --text-light:#6C757D; --border:#DEE2E6; --error:#DC3545; }
+        body { font-family:'DM Sans',sans-serif; background:linear-gradient(135deg,#F8F9FA 0%,#E9ECEF 100%); color:var(--text); line-height:1.6; min-height:100vh; padding:2rem 1rem; }
+        .container { max-width:900px; margin:0 auto; }
+        .header { text-align:center; margin-bottom:3rem; padding:2rem; background:var(--surface); border-radius:16px; box-shadow:0 4px 6px rgba(0,0,0,0.05); }
+        .header h1 { font-size:2.5rem; font-weight:700; color:var(--primary); margin-bottom:0.5rem; letter-spacing:-0.02em; }
+        .header .subtitle { color:var(--text-light); font-family:'Space Mono',monospace; font-size:0.95rem; text-transform:uppercase; letter-spacing:0.1em; }
+        .form-section { background:var(--surface); padding:2rem; border-radius:16px; margin-bottom:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.08); border-left:4px solid var(--primary); transition:all 0.3s ease; }
+        .form-section:hover { box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+        .form-section h2 { font-size:1.5rem; color:var(--primary); margin-bottom:1.5rem; font-weight:700; }
+        .form-group { margin-bottom:1.5rem; }
+        label { display:block; margin-bottom:0.5rem; font-weight:500; color:var(--text); font-size:0.95rem; }
+        label .required { color:var(--error); margin-left:0.25rem; }
+        select, input[type="number"], input[type="date"] { width:100%; padding:0.875rem 1rem; border:2px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:1rem; transition:all 0.2s ease; background:var(--surface); }
+        select:focus, input[type="number"]:focus, input[type="date"]:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,91,123,0.1); }
+        .student-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:1.5rem; }
+        .student-btn { padding:1.25rem; background:linear-gradient(135deg,var(--primary) 0%,#1e3a52 100%); color:white; border:none; border-radius:12px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:600; transition:all 0.3s ease; text-align:center; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+        .student-btn:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(45,91,123,0.3); }
+        .student-btn.selected { background:linear-gradient(135deg,var(--accent) 0%,#c45a40 100%); transform:scale(1.05); }
+        .attendance-options { display:flex; gap:1rem; margin-top:1.5rem; }
+        .attendance-btn { flex:1; padding:1rem; border:2px solid var(--border); background:var(--surface); border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; transition:all 0.2s ease; }
+        .attendance-btn:hover { border-color:var(--primary); }
+        .attendance-btn.selected { background:var(--primary); color:white; border-color:var(--primary); }
+        .attendance-btn.absent.selected { background:var(--secondary); border-color:var(--secondary); }
+        .attendance-btn.suspended.selected { background:var(--accent); border-color:var(--accent); }
+        .paws-section { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.5rem; margin-top:1.5rem; }
+        .paws-item { background:linear-gradient(135deg,#F8F9FA 0%,#FFFFFF 100%); padding:1.5rem; border-radius:12px; border:2px solid var(--border); }
+        .paws-item h3 { font-size:1.1rem; color:var(--primary); margin-bottom:0.75rem; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.05em; }
+        .paws-item .letter { display:inline-block; width:32px; height:32px; background:var(--primary); color:white; border-radius:50%; text-align:center; line-height:32px; font-weight:700; margin-right:0.5rem; }
+        .points-container { display:flex; align-items:flex-end; gap:0.5rem; }
+        .points-group { flex:1; }
+        .points-group label { font-size:0.85rem; margin-bottom:0.35rem; }
+        .points-separator { font-size:1.5rem; font-weight:700; color:var(--primary); padding-bottom:0.75rem; }
+        input[type="number"] { font-weight:600; color:var(--primary); }
+        .custom-questions { margin-top:1.5rem; }
+        .question-item { background:#FFF9F5; padding:1.25rem; border-radius:8px; margin-bottom:1rem; border-left:4px solid var(--secondary); }
+        .question-item h4 { color:var(--text); margin-bottom:0.75rem; font-size:1rem; font-weight:600; }
+        .question-input-row { display:flex; align-items:flex-end; gap:0.6rem; }
+        .question-input-row input { flex:1; }
+        .quick-fill { display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem; margin:-0.5rem 0 1.5rem; }
+        .quick-fill-label { font-size:0.85rem; font-weight:600; color:var(--text-light); margin-right:0.25rem; }
+        .quick-fill-btn { padding:0.5rem 0.9rem; background:transparent; border:2px solid var(--primary); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:600; color:var(--primary); cursor:pointer; transition:all 0.2s ease; }
+        .quick-fill-btn:hover:not(:disabled) { background:var(--primary); color:white; }
+        .quick-fill-btn:disabled { border-color:var(--border); color:var(--text-light); cursor:not-allowed; opacity:0.6; }
+        .na-btn { flex-shrink:0; padding:0.6rem 0.85rem; background:transparent; border:2px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:700; color:var(--text-light); cursor:pointer; transition:all 0.2s ease; white-space:nowrap; line-height:1; }
+        .na-btn:hover { border-color:var(--secondary); color:var(--secondary); }
+        .na-btn.active { background:var(--secondary); border-color:var(--secondary); color:white; }
+        .na-btn.active + input, input.na-applied { background:#F0F0F0; color:var(--text-light); pointer-events:none; }
+        input[type="text"], textarea { width:100%; padding:0.75rem; border:2px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.95rem; transition:all 0.2s ease; }
+        textarea { min-height:80px; resize:vertical; }
+        input[type="text"]:focus, textarea:focus { outline:none; border-color:var(--secondary); box-shadow:0 0 0 3px rgba(244,162,89,0.1); }
+        .submit-btn { width:100%; padding:1.25rem 2rem; background:linear-gradient(135deg,var(--success) 0%,#40916C 100%); color:white; border:none; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:1.1rem; font-weight:700; cursor:pointer; transition:all 0.3s ease; box-shadow:0 4px 6px rgba(0,0,0,0.1); margin-top:2rem; }
+        .submit-btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(82,183,136,0.4); }
+        .submit-btn:disabled { background:var(--border); cursor:not-allowed; transform:none; box-shadow:none; }
+        .error-message { background:var(--error); color:white; padding:1rem; border-radius:8px; margin-top:1rem; text-align:center; font-size:0.95rem; }
+        .hidden { display:none; }
+        .fade-in { animation:fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .success-message { background:linear-gradient(135deg,var(--success) 0%,#40916C 100%); color:white; padding:1.5rem; border-radius:12px; text-align:center; font-size:1.1rem; font-weight:600; margin-top:1rem; }
+        #recentHistorySection { border-left-color:var(--secondary); }
+        .history-loading { display:flex; align-items:center; gap:0.75rem; color:var(--text-light); font-style:italic; padding:1.5rem 0; }
+        .spinner { width:20px; height:20px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .history-table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); margin-top:0.5rem; }
+        .history-table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+        .history-table thead tr { background:var(--primary); color:white; }
+        .history-table thead th { padding:0.75rem 1rem; text-align:left; font-family:'Space Mono',monospace; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; }
+        .history-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s ease; }
+        .history-table tbody tr:hover { background:#F0F4F8; }
+        .history-table tbody td { padding:0.7rem 1rem; vertical-align:middle; }
+        .status-pill { display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; white-space:nowrap; }
+        .status-pill.present  { background:#D4EDDA; color:#1A6535; }
+        .status-pill.absent   { background:#FFF3CD; color:#856404; }
+        .status-pill.suspended{ background:#F8D7DA; color:#842029; }
+        .points-display { display:flex; align-items:center; gap:0.3rem; white-space:nowrap; }
+        .points-earned { font-weight:700; color:var(--primary); font-size:1rem; }
+        .points-slash { color:var(--text-light); }
+        .points-possible { color:var(--text-light); font-size:0.85rem; }
+        .points-pct { font-size:0.78rem; font-weight:700; padding:0.15rem 0.45rem; border-radius:12px; margin-left:0.25rem; }
+        .pct-high{background:#D4EDDA;color:#1A6535} .pct-mid{background:#FFF3CD;color:#856404} .pct-low{background:#F8D7DA;color:#842029}
+        .history-empty { text-align:center; color:var(--text-light); padding:2rem; font-style:italic; }
+        .edit-entry-btn { padding:0.3rem 0.75rem; background:transparent; border:1.5px solid var(--primary); color:var(--primary); border-radius:6px; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.2s ease; white-space:nowrap; }
+        .edit-entry-btn:hover { background:var(--primary); color:white; }
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px); z-index:1000; display:flex; align-items:flex-start; justify-content:center; padding:2rem 1rem; overflow-y:auto; opacity:0; transition:opacity 0.25s ease; pointer-events:none; }
+        .modal-overlay.open { opacity:1; pointer-events:all; }
+        .modal { background:var(--surface); border-radius:20px; width:100%; max-width:680px; box-shadow:0 20px 60px rgba(0,0,0,0.25); transform:translateY(24px); transition:transform 0.3s ease; overflow:hidden; }
+        .modal-overlay.open .modal { transform:translateY(0); }
+        .modal-header { background:linear-gradient(135deg,var(--primary) 0%,#1e3a52 100%); padding:1.5rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+        .modal-header h3 { color:white; font-size:1.2rem; font-weight:700; }
+        .modal-subtitle { color:rgba(255,255,255,0.7); font-size:0.85rem; font-family:'Space Mono',monospace; margin-top:0.2rem; }
+        .modal-close { width:36px; height:36px; background:rgba(255,255,255,0.15); border:none; border-radius:50%; color:white; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; flex-shrink:0; }
+        .modal-close:hover { background:rgba(255,255,255,0.3); }
+        .modal-body { padding:2rem; overflow-y:auto; max-height:70vh; }
+        .modal-section { margin-bottom:1.75rem; padding-bottom:1.75rem; border-bottom:1px solid var(--border); }
+        .modal-section:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+        .modal-section-title { font-size:0.8rem; font-family:'Space Mono',monospace; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); margin-bottom:1rem; font-weight:700; }
+        .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        @media(max-width:500px){.modal-row{grid-template-columns:1fr}}
+        .modal-field { margin-bottom:0; }
+        .modal-field label { font-size:0.88rem; margin-bottom:0.4rem; display:block; }
+        .modal-field select,.modal-field input,.modal-field textarea { padding:0.65rem 0.85rem; font-size:0.95rem; width:100%; }
+        .modal-attendance-opts { display:flex; gap:0.75rem; flex-wrap:wrap; }
+        .modal-att-btn { flex:1; min-width:100px; padding:0.65rem 0.75rem; border:2px solid var(--border); background:var(--surface); border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:600; transition:all 0.2s ease; text-align:center; }
+        .modal-att-btn.sel-present{background:var(--primary);color:white;border-color:var(--primary)}
+        .modal-att-btn.sel-absent{background:var(--secondary);color:white;border-color:var(--secondary)}
+        .modal-att-btn.sel-suspended{background:var(--accent);color:white;border-color:var(--accent)}
+        .modal-footer { padding:1.25rem 2rem; background:#F8F9FA; border-top:1px solid var(--border); display:flex; gap:1rem; justify-content:flex-end; }
+        .modal-cancel-btn { padding:0.75rem 1.5rem; background:transparent; border:2px solid var(--border); border-radius:10px; color:var(--text-light); font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; cursor:pointer; }
+        .modal-save-btn { padding:0.75rem 1.75rem; background:linear-gradient(135deg,var(--success) 0%,#40916C 100%); border:none; border-radius:10px; color:white; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:700; cursor:pointer; }
+        .modal-save-btn:disabled { background:var(--border); cursor:not-allowed; }
+        .modal-success{color:#1A6535;background:#D4EDDA;padding:0.65rem 1rem;border-radius:8px;font-size:0.9rem;font-weight:600;text-align:center;margin-bottom:1rem;}
+        .modal-error{color:#842029;background:#F8D7DA;padding:0.65rem 1rem;border-radius:8px;font-size:0.9rem;font-weight:600;text-align:center;margin-bottom:1rem;}
+        .modal-paws-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        .modal-paws-card { background:#F8F9FA; border:2px solid var(--border); border-radius:10px; padding:1rem; }
+        .modal-paws-card h4 { font-size:0.8rem; font-family:'Space Mono',monospace; text-transform:uppercase; color:var(--primary); margin-bottom:0.75rem; }
+        .modal-paws-pts { display:flex; align-items:flex-end; gap:0.4rem; }
+    </style>
+</head>
+<body>
+<nav style="background:linear-gradient(135deg,#2D5B7B,#1e3a52);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.18);">
+  <div style="font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:white;">Student<span style="color:#F4A259">Tracker</span></div>
+  <div style="display:flex;gap:0.5rem;">
+    <a href="dashboard.html" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.84rem;font-weight:600;text-decoration:none;">Dashboard</a>
+    <a href="pointbank.html" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.84rem;font-weight:600;text-decoration:none;">🏆 Point Bank</a>
+    <a href="students.html" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.84rem;font-weight:600;text-decoration:none;">👤 Students</a>
+    <a href="admin.html" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.84rem;font-weight:600;text-decoration:none;">Admin</a>
+  </div>
+</nav>
+<div class="container">
+    <div class="header"><h1>Student Tracker</h1><p class="subtitle">Attendance & PAWS Behavior Points</p></div>
+    <form id="trackerForm">
+        <div class="form-section">
+            <h2>Staff & Classroom</h2>
+            <div id="quickFill" class="quick-fill hidden">
+                <span class="quick-fill-label">Quick fill:</span>
+                <button type="button" class="quick-fill-btn" data-level="1">Last teacher</button>
+                <button type="button" class="quick-fill-btn" data-level="2">Last teacher + room</button>
+                <button type="button" class="quick-fill-btn" data-level="3">Last teacher + room + student</button>
+            </div>
+            <div class="form-group"><label for="staffName">Select Staff Name <span class="required">*</span></label><select id="staffName" required><option value="">-- Choose Staff --</option></select></div>
+            <div class="form-group"><label for="classroom">Select Classroom # <span class="required">*</span></label><select id="classroom" required><option value="">-- Choose Classroom --</option></select></div>
+            <div class="form-group"><label for="entryDate">Select Date <span class="required">*</span></label><input type="date" id="entryDate" required></div>
+        </div>
+        <div id="studentSection" class="form-section hidden"><h2>Select Student <span class="required">*</span></h2><div id="studentGrid" class="student-grid"></div></div>
+        <div id="recentHistorySection" class="form-section hidden">
+            <h2>Recent History <span style="font-size:0.75rem;font-family:'Space Mono',monospace;background:var(--secondary);color:white;padding:0.2rem 0.6rem;border-radius:20px;font-weight:700;text-transform:uppercase;">Last 10</span></h2>
+            <div id="recentHistoryContent"><div class="history-loading"><div class="spinner"></div>Loading…</div></div>
+        </div>
+        <div id="attendanceSection" class="form-section hidden">
+            <h2>Attendance Status <span class="required">*</span></h2>
+            <p style="margin-bottom:1rem;color:var(--text-light);">Was <strong id="selectedStudentName"></strong> in class today?</p>
+            <div class="attendance-options">
+                <button type="button" class="attendance-btn" data-status="yes">✓ Yes</button>
+                <button type="button" class="attendance-btn absent" data-status="absent">✗ No, Absent</button>
+                <button type="button" class="attendance-btn suspended" data-status="suspended">⚠ No, Suspended</button>
+            </div>
+        </div>
+        <div id="pawsSection" class="form-section hidden">
+            <h2>PAWS Behavior Points <span class="required">*</span></h2>
+            <div class="paws-section">
+                <div class="paws-item"><h3><span class="letter">P</span>ractice Safety</h3><div class="points-container"><div class="points-group"><label for="practicePoints">Points Earned <span class="required">*</span></label><input type="number" id="practicePoints" min="0" value="0" required></div><div class="points-separator">/</div><div class="points-group"><label for="practicePossible">Points Possible <span class="required">*</span></label><input type="number" id="practicePossible" min="0" value="30" required></div></div></div>
+                <div class="paws-item"><h3><span class="letter">A</span>ct Responsibly</h3><div class="points-container"><div class="points-group"><label for="actPoints">Points Earned <span class="required">*</span></label><input type="number" id="actPoints" min="0" value="0" required></div><div class="points-separator">/</div><div class="points-group"><label for="actPossible">Points Possible <span class="required">*</span></label><input type="number" id="actPossible" min="0" value="30" required></div></div></div>
+                <div class="paws-item"><h3><span class="letter">W</span>ork Hard</h3><div class="points-container"><div class="points-group"><label for="workPoints">Points Earned <span class="required">*</span></label><input type="number" id="workPoints" min="0" value="0" required></div><div class="points-separator">/</div><div class="points-group"><label for="workPossible">Points Possible <span class="required">*</span></label><input type="number" id="workPossible" min="0" value="30" required></div></div></div>
+                <div class="paws-item"><h3>Show <span class="letter">R</span>espect</h3><div class="points-container"><div class="points-group"><label for="respectPoints">Points Earned <span class="required">*</span></label><input type="number" id="respectPoints" min="0" value="0" required></div><div class="points-separator">/</div><div class="points-group"><label for="respectPossible">Points Possible <span class="required">*</span></label><input type="number" id="respectPossible" min="0" value="30" required></div></div></div>
+            </div>
+        </div>
+        <div id="customQuestionsSection" class="form-section hidden"><h2>Student-Specific Questions <span class="required">*</span></h2><div id="customQuestions" class="custom-questions"></div></div>
+        <div id="notesSection" class="form-section hidden"><h2>Additional Notes</h2><div class="form-group"><label for="additionalNotes">Notes (optional)</label><textarea id="additionalNotes" placeholder="Enter any additional comments…"></textarea></div></div>
+        <button type="submit" id="submitBtn" class="submit-btn hidden" disabled>Submit Data</button>
+        <div id="errorMessage" class="error-message hidden"></div>
+        <div id="successMessage" class="success-message hidden"></div>
+    </form>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editModalOverlay" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <div><h3>Edit Entry</h3><div class="modal-subtitle" id="modalSubtitle"></div></div>
+            <button class="modal-close" id="modalCloseBtn">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalFeedback" class="hidden"></div>
+            <div class="modal-section">
+                <div class="modal-section-title">Entry Details</div>
+                <div class="modal-row">
+                    <div class="modal-field"><label for="editStaff">Staff Name</label><select id="editStaff"></select></div>
+                    <div class="modal-field"><label for="editDate">Date</label><input type="date" id="editDate"></div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-section-title">Attendance Status</div>
+                <div class="modal-attendance-opts">
+                    <button type="button" class="modal-att-btn" data-val="yes">✓ Present</button>
+                    <button type="button" class="modal-att-btn" data-val="absent">✗ Absent</button>
+                    <button type="button" class="modal-att-btn" data-val="suspended">⚠ Suspended</button>
+                </div>
+            </div>
+            <div class="modal-section" id="modalPawsSection">
+                <div class="modal-section-title">PAWS Behavior Points</div>
+                <div class="modal-paws-grid">
+                    <div class="modal-paws-card"><h4>P · Practice Safety</h4><div class="modal-paws-pts"><div class="points-group"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editPracticePoints" min="0" value="0" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div><div class="points-separator">/</div><div class="points-group"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editPracticePossible" min="0" value="30" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div></div></div>
+                    <div class="modal-paws-card"><h4>A · Act Responsibly</h4><div class="modal-paws-pts"><div class="points-group"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editActPoints" min="0" value="0" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div><div class="points-separator">/</div><div class="points-group"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editActPossible" min="0" value="30" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div></div></div>
+                    <div class="modal-paws-card"><h4>W · Work Hard</h4><div class="modal-paws-pts"><div class="points-group"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editWorkPoints" min="0" value="0" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div><div class="points-separator">/</div><div class="points-group"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editWorkPossible" min="0" value="30" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div></div></div>
+                    <div class="modal-paws-card"><h4>S · Show Respect</h4><div class="modal-paws-pts"><div class="points-group"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editRespectPoints" min="0" value="0" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div><div class="points-separator">/</div><div class="points-group"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editRespectPossible" min="0" value="30" style="width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary);"></div></div></div>
+                </div>
+            </div>
+            <div class="modal-section hidden" id="modalCustomSection"><div class="modal-section-title">Student-Specific Questions</div><div id="modalCustomQuestions"></div></div>
+            <div class="modal-section"><div class="modal-section-title">Additional Notes</div><div class="modal-field"><textarea id="editNotes" placeholder="Enter any additional notes…" style="min-height:70px;width:100%;padding:0.65rem;border:2px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;"></textarea></div></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-cancel-btn" id="modalCancelBtn">Cancel</button>
+            <button type="button" class="modal-save-btn" id="modalSaveBtn">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'demo://in-memory';
+const SUPABASE_ANON = 'demo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let staffList = [], classroomList = [], studentsData = {};
+let selectedStudent = null, attendanceStatus = null, editingRecord = null, modalAtt = null;
+
+// ── Config cache ──────────────────────────────────────────────
+async function fetchConfig() {
+    const KEY = 'st_config_sql_v2', TTL = 30 * 60 * 1000;
+    try { const c = sessionStorage.getItem(KEY); if (c) { const {ts,data} = JSON.parse(c); if (Date.now()-ts < TTL) return data; } } catch(e) {}
+    const [s,c,st] = await Promise.all([
+        sb.from('staff').select('id,name,active').order('name'),
+        sb.from('classrooms').select('id,room_number').order('room_number'),
+        sb.from('students').select('id,classroom_id,name,active,use_pbis,use_points,question_1,question_2,question_3,question_4,question_5,question_6,question_7,question_8,question_9,question_10,question_11,question_12,question_13,question_14,question_15,question_16,question_17,question_18,question_19,question_20').eq('active',true).order('name'),
+    ]);
+    const data = { staff: s.data||[], classrooms: c.data||[], students: st.data||[] };
+    try { sessionStorage.setItem(KEY, JSON.stringify({ts:Date.now(),data})); } catch(e) {}
+    return data;
+}
+
+function getQs(row) {
+    const qs = [];
+    for (let i=1;i<=20;i++) { const v=row[`question_${i}`]; if (v&&v.trim()) qs.push(v.trim()); }
+    return qs;
+}
+
+async function loadConfiguration() {
+    try {
+        const cfg = await fetchConfig();
+        staffList = cfg.staff; classroomList = cfg.classrooms;
+        studentsData = {};
+        cfg.students.forEach(s => {
+            if (!studentsData[s.classroom_id]) studentsData[s.classroom_id] = [];
+            studentsData[s.classroom_id].push({id:s.id,name:s.name,usePBIS:s.use_pbis,usePoints:s.use_points,questions:getQs(s)});
+        });
+        const sel = document.getElementById('staffName');
+        staffList.filter(s => s.active !== false).forEach(s => { const o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o); });
+        const cel = document.getElementById('classroom');
+        classroomList.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent='Classroom '+c.room_number; cel.appendChild(o); });
+        const esel = document.getElementById('editStaff');
+        staffList.forEach(s => { const o=document.createElement('option'); o.value=s.id; o.textContent=s.active===false ? s.name+' (removed)' : s.name; esel.appendChild(o); });
+        updateQuickFill();
+    } catch(err) { alert('Error loading config: '+err.message); }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadConfiguration();
+    document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+});
+
+// ── Quick fill (last submitted teacher / room / student, per browser) ──
+const LAST_ENTRY_KEY = 'dlc_last_entry';
+function readLastEntry() { try { return JSON.parse(localStorage.getItem(LAST_ENTRY_KEY)) || null; } catch(e) { return null; } }
+function saveLastEntry(entry) { try { localStorage.setItem(LAST_ENTRY_KEY, JSON.stringify(entry)); } catch(e) {} }
+
+// Resolve the saved ids against current config; anything removed since comes back null.
+function resolveLastEntry() {
+    const last = readLastEntry() || {};
+    const staff = staffList.find(s => s.id === last.staffId && s.active !== false) || null;
+    const room = classroomList.find(c => c.id === last.classroomId) || null;
+    const student = room ? (studentsData[room.id] || []).find(s => s.id === last.studentId) || null : null;
+    return { staff, room, student };
+}
+
+function updateQuickFill() {
+    const { staff, room, student } = resolveLastEntry();
+    const ready = { 1: !!staff, 2: !!(staff && room), 3: !!(staff && room && student) };
+    const tips = {
+        1: staff ? staff.name : '',
+        2: staff && room ? `${staff.name} · Classroom ${room.room_number}` : '',
+        3: staff && room && student ? `${staff.name} · Classroom ${room.room_number} · ${student.name}` : ''
+    };
+    document.querySelectorAll('.quick-fill-btn').forEach(btn => {
+        const level = +btn.dataset.level;
+        btn.disabled = !ready[level];
+        btn.title = tips[level];
+    });
+    document.getElementById('quickFill').classList.toggle('hidden', !ready[1]);
+}
+
+function quickFill(level) {
+    const { staff, room, student } = resolveLastEntry();
+    if (!staff) return;
+    document.getElementById('staffName').value = staff.id;
+    if (level < 2 || !room) return;
+    const cel = document.getElementById('classroom');
+    cel.value = room.id;
+    cel.dispatchEvent(new Event('change'));
+    if (level < 3 || !student) return;
+    selectStudent(student);
+    document.getElementById('attendanceSection').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+document.querySelectorAll('.quick-fill-btn').forEach(btn =>
+    btn.addEventListener('click', () => quickFill(+btn.dataset.level))
+);
+
+document.getElementById('classroom').addEventListener('change', function() {
+    const cid = parseInt(this.value);
+    const grid = document.getElementById('studentGrid');
+    grid.innerHTML = '';
+    resetStudentState();
+    if (cid && studentsData[cid]) {
+        document.getElementById('studentSection').classList.remove('hidden');
+        studentsData[cid].forEach(s => {
+            const btn = document.createElement('button'); btn.type='button'; btn.className='student-btn'; btn.textContent=s.name;
+            btn.onclick = () => selectStudent(s); grid.appendChild(btn);
+        });
+    } else { document.getElementById('studentSection').classList.add('hidden'); }
+});
+
+function selectStudent(student) {
+    selectedStudent = student; attendanceStatus = null;
+    document.querySelectorAll('.student-btn').forEach(b => { b.classList.remove('selected'); if (b.textContent===student.name) b.classList.add('selected'); });
+    document.getElementById('selectedStudentName').textContent = student.name;
+    document.getElementById('recentHistoryContent').innerHTML = '<div class="history-loading"><div class="spinner"></div>Loading…</div>';
+    document.getElementById('recentHistorySection').classList.remove('hidden');
+    loadStudentHistory(student.id);
+    document.getElementById('attendanceSection').classList.remove('hidden');
+    document.querySelectorAll('.attendance-btn').forEach(b => b.classList.remove('selected'));
+    ['pawsSection','customQuestionsSection','notesSection','submitBtn'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    document.getElementById('errorMessage').classList.add('hidden');
+}
+
+async function loadStudentHistory(studentId) {
+    const { data, error } = await sb.from('submissions')
+        .select('id,entry_date,attendance_status,practice_points,practice_possible,act_points,act_possible,work_points,work_possible,respect_points,respect_possible,notes,staff:staff_id(id,name),custom_q1,custom_q2,custom_q3,custom_q4,custom_q5,custom_q6,custom_q7,custom_q8,custom_q9,custom_q10,custom_q11,custom_q12,custom_q13,custom_q14,custom_q15,custom_q16,custom_q17,custom_q18,custom_q19,custom_q20')
+        .eq('student_id', studentId).order('entry_date',{ascending:false}).limit(10);
+    const content = document.getElementById('recentHistoryContent');
+    if (error || !data?.length) { content.innerHTML = '<p class="history-empty">No previous entries found.</p>'; return; }
+    const rows = data.map((r,idx) => {
+        const d = r.entry_date ? new Date(r.entry_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+        const sm = {yes:['present','✓ Present'],absent:['absent','✗ Absent'],suspended:['suspended','⚠ Suspended']};
+        const [pc,pl] = sm[r.attendance_status]||['absent',r.attendance_status];
+        const ep = [r.practice_points,r.act_points,r.work_points,r.respect_points].map(Number).reduce((a,b)=>a+b,0);
+        const pp = [r.practice_possible,r.act_possible,r.work_possible,r.respect_possible].map(Number).reduce((a,b)=>a+b,0);
+        let pts = '<span class="status-pill" style="background:#E9ECEF;color:#6C757D;">N/A</span>';
+        if (r.attendance_status==='yes' && pp>0) { const pct=Math.round((ep/pp)*100); const cls=pct>=80?'pct-high':pct>=60?'pct-mid':'pct-low'; pts=`<div class="points-display"><span class="points-earned">${ep}</span><span class="points-slash">/</span><span class="points-possible">${pp}</span><span class="points-pct ${cls}">${pct}%</span></div>`; }
+        return `<tr><td>${d}</td><td>${esc(r.staff?.name||'—')}</td><td><span class="status-pill ${pc}">${pl}</span></td><td>${pts}</td><td><button type="button" class="edit-entry-btn" data-idx="${idx}">✎ Edit</button></td></tr>`;
+    }).join('');
+    content.innerHTML = `<div class="history-table-wrap"><table class="history-table"><thead><tr><th>Date</th><th>Staff</th><th>Attendance</th><th>Points</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    content._records = data;
+    content.querySelectorAll('.edit-entry-btn').forEach(btn => btn.addEventListener('click', () => openEditModal(content._records[+btn.dataset.idx])));
+}
+
+document.querySelectorAll('.attendance-btn').forEach(btn => btn.addEventListener('click', function() {
+    attendanceStatus = this.dataset.status;
+    document.querySelectorAll('.attendance-btn').forEach(b => b.classList.remove('selected'));
+    this.classList.add('selected');
+    const present = attendanceStatus === 'yes';
+    document.getElementById('pawsSection').classList.toggle('hidden', !(present && selectedStudent?.usePBIS));
+    if (present && selectedStudent?.questions?.length) { document.getElementById('customQuestionsSection').classList.remove('hidden'); loadCustomQuestions(); }
+    else { document.getElementById('customQuestionsSection').classList.add('hidden'); }
+    document.getElementById('notesSection').classList.remove('hidden');
+    const sb2 = document.getElementById('submitBtn'); sb2.classList.remove('hidden'); sb2.disabled = false;
+}));
+
+function loadCustomQuestions() {
+    const div = document.getElementById('customQuestions'); div.innerHTML = '';
+    selectedStudent.questions.forEach((q,i) => {
+        const ql = q.toLowerCase();
+        const type = (ql.includes('step')&&ql.includes('day')) ? 'text' : 'number';
+        const ph = type==='text' ? 'e.g. 3, 2' : '0';
+        const el = document.createElement('div'); el.className='question-item';
+        el.innerHTML = `<h4>${q} <span class="required">*</span></h4><div class="form-group" style="margin-bottom:0;"><div class="question-input-row"><input type="${type}" id="customPoints${i}" placeholder="${ph}" value="${type==='number'?'0':''}"><button type="button" class="na-btn" data-target="customPoints${i}">N/A</button></div></div>`;
+        div.appendChild(el);
+    });
+    div.querySelectorAll('.na-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const inp = document.getElementById(btn.dataset.target);
+            const isNA = btn.classList.toggle('active');
+            if (isNA) {
+                inp.dataset.prevVal = inp.value;
+                inp.value = '';
+                inp.placeholder = 'N/A';
+                inp.classList.add('na-applied');
+                inp.removeAttribute('required');
+            } else {
+                inp.value = inp.dataset.prevVal ?? '';
+                inp.placeholder = inp.type === 'text' ? 'e.g. 3, 2' : '0';
+                inp.classList.remove('na-applied');
+                inp.setAttribute('required', '');
+            }
+        });
+    });
+}
+
+document.getElementById('trackerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const staffId = parseInt(document.getElementById('staffName').value);
+    const classId = parseInt(document.getElementById('classroom').value);
+    const date    = document.getElementById('entryDate').value;
+    if (!staffId||!classId||!date||!selectedStudent||!attendanceStatus) {
+        document.getElementById('errorMessage').textContent='Please complete all required fields.';
+        document.getElementById('errorMessage').classList.remove('hidden'); return;
+    }
+    document.getElementById('errorMessage').classList.add('hidden');
+    const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='Submitting…';
+    const present = attendanceStatus==='yes';
+    const row = { entry_date:date, staff_id:staffId, classroom_id:classId, student_id:selectedStudent.id, attendance_status:attendanceStatus, notes:document.getElementById('additionalNotes').value||null };
+    if (present && selectedStudent.usePBIS) {
+        row.practice_points  =+document.getElementById('practicePoints').value||0;
+        row.practice_possible=+document.getElementById('practicePossible').value||0;
+        row.act_points       =+document.getElementById('actPoints').value||0;
+        row.act_possible     =+document.getElementById('actPossible').value||0;
+        row.work_points      =+document.getElementById('workPoints').value||0;
+        row.work_possible    =+document.getElementById('workPossible').value||0;
+        row.respect_points   =+document.getElementById('respectPoints').value||0;
+        row.respect_possible =+document.getElementById('respectPossible').value||0;
+    }
+    if (present && selectedStudent.questions) {
+        selectedStudent.questions.forEach((q,i) => { const inp=document.getElementById(`customPoints${i}`); const naBtn=inp?.closest('.question-input-row')?.querySelector('.na-btn'); row[`custom_q${i+1}`] = (naBtn?.classList.contains('active')) ? null : (inp?.value||null); });
+    }
+    try {
+        const { error } = await sb.from('submissions').insert(row);
+        if (error) throw error;
+        if (present && selectedStudent.usePBIS && selectedStudent.usePoints) {
+            const earned=(row.practice_points||0)+(row.act_points||0)+(row.work_points||0)+(row.respect_points||0);
+            await sb.from('point_bank').insert({date:date,student_id:selectedStudent.id,points:earned,description:`Daily PAWS — ${date}`});
+        }
+        saveLastEntry({ staffId, classroomId: classId, studentId: selectedStudent.id });
+        document.getElementById('successMessage').textContent='✓ Data submitted successfully!';
+        document.getElementById('successMessage').classList.remove('hidden');
+        try{sessionStorage.removeItem('st_config_sql_v2');}catch(e){}
+        setTimeout(()=>{ this.reset(); resetStudentState(); document.getElementById('successMessage').classList.add('hidden'); btn.textContent='Submit Data'; document.getElementById('entryDate').value=new Date().toISOString().split('T')[0]; updateQuickFill(); },2000);
+    } catch(err) {
+        document.getElementById('errorMessage').textContent='Error: '+err.message;
+        document.getElementById('errorMessage').classList.remove('hidden'); btn.disabled=false; btn.textContent='Submit Data';
+    }
+});
+
+function resetStudentState() {
+    selectedStudent=null; attendanceStatus=null;
+    ['attendanceSection','recentHistorySection','pawsSection','customQuestionsSection','notesSection','submitBtn'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.querySelectorAll('.student-btn,.attendance-btn').forEach(b=>b.classList.remove('selected'));
+}
+
+// ── Edit Modal ────────────────────────────────────────────────
+function openEditModal(record) {
+    editingRecord=record; modalAtt=record.attendance_status||'yes';
+    const dl = record.entry_date ? new Date(record.entry_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+    document.getElementById('modalSubtitle').textContent=`${selectedStudent?.name||''} · ${dl}`;
+    if (record.staff?.id) document.getElementById('editStaff').value=record.staff.id;
+    document.getElementById('editDate').value=record.entry_date||'';
+    setMA(modalAtt);
+    const showP=modalAtt==='yes';
+    document.getElementById('modalPawsSection').classList.toggle('hidden',!showP);
+    if(showP){
+        document.getElementById('editPracticePoints').value =record.practice_points??0;
+        document.getElementById('editPracticePossible').value=record.practice_possible??30;
+        document.getElementById('editActPoints').value      =record.act_points??0;
+        document.getElementById('editActPossible').value    =record.act_possible??30;
+        document.getElementById('editWorkPoints').value     =record.work_points??0;
+        document.getElementById('editWorkPossible').value   =record.work_possible??30;
+        document.getElementById('editRespectPoints').value  =record.respect_points??0;
+        document.getElementById('editRespectPossible').value=record.respect_possible??30;
+    }
+    const hasQs = selectedStudent?.questions?.length>0 && modalAtt==='yes';
+    document.getElementById('modalCustomSection').classList.toggle('hidden',!hasQs);
+    if(hasQs) buildModalQs(record);
+    document.getElementById('editNotes').value=record.notes||'';
+    document.getElementById('modalFeedback').className='hidden';
+    document.getElementById('modalSaveBtn').disabled=false; document.getElementById('modalSaveBtn').textContent='Save Changes';
+    document.getElementById('editModalOverlay').classList.add('open'); document.body.style.overflow='hidden';
+}
+function closeEditModal() { document.getElementById('editModalOverlay').classList.remove('open'); document.body.style.overflow=''; editingRecord=null; }
+document.getElementById('modalCloseBtn').addEventListener('click',closeEditModal);
+document.getElementById('modalCancelBtn').addEventListener('click',closeEditModal);
+document.getElementById('editModalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('editModalOverlay'))closeEditModal();});
+document.querySelectorAll('.modal-att-btn').forEach(btn=>btn.addEventListener('click',()=>{
+    setMA(btn.dataset.val);
+    document.getElementById('modalPawsSection').classList.toggle('hidden',modalAtt!=='yes');
+    document.getElementById('modalCustomSection').classList.toggle('hidden',!(selectedStudent?.questions?.length>0&&modalAtt==='yes'));
+}));
+function setMA(val) {
+    modalAtt=val;
+    document.querySelectorAll('.modal-att-btn').forEach(b=>b.classList.remove('sel-present','sel-absent','sel-suspended'));
+    const t=document.querySelector(`.modal-att-btn[data-val="${val}"]`);
+    if(t) t.classList.add(val==='yes'?'sel-present':val==='absent'?'sel-absent':'sel-suspended');
+}
+function buildModalQs(record) {
+    const div=document.getElementById('modalCustomQuestions'); div.innerHTML='';
+    selectedStudent.questions.forEach((q,i)=>{
+        const ql=q.toLowerCase(), type=(ql.includes('step')&&ql.includes('day'))?'text':'number';
+        const rawVal=record[`custom_q${i+1}`];
+        const isNA = rawVal===null || rawVal===undefined;
+        const val=isNA?'':rawVal;
+        const el=document.createElement('div'); el.className='question-item';
+        el.innerHTML=`<h4>${q}</h4><div class="modal-field" style="margin-bottom:0;"><div class="question-input-row"><input type="${type}" id="mq${i}" value="${esc(String(val))}" placeholder="${isNA?'N/A':(type==='text'?'e.g. 3, 2':'0')}" style="flex:1;padding:0.65rem;border:2px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;"${isNA?' class="na-applied"':''}><button type="button" class="na-btn${isNA?' active':''}" data-target="mq${i}">N/A</button></div></div>`;
+        div.appendChild(el);
+    });
+    div.querySelectorAll('.na-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const inp = document.getElementById(btn.dataset.target);
+            const isNA = btn.classList.toggle('active');
+            if (isNA) {
+                inp.dataset.prevVal = inp.value;
+                inp.value = '';
+                inp.placeholder = 'N/A';
+                inp.classList.add('na-applied');
+            } else {
+                inp.value = inp.dataset.prevVal ?? '';
+                inp.placeholder = inp.type === 'text' ? 'e.g. 3, 2' : '0';
+                inp.classList.remove('na-applied');
+            }
+        });
+    });
+}
+document.getElementById('modalSaveBtn').addEventListener('click', async ()=>{
+    if(!editingRecord) return;
+    const btn=document.getElementById('modalSaveBtn'); btn.disabled=true; btn.textContent='Saving…';
+    const fb=document.getElementById('modalFeedback'); fb.className='hidden';
+    const showP=modalAtt==='yes';
+    const u={staff_id:parseInt(document.getElementById('editStaff').value),entry_date:document.getElementById('editDate').value,attendance_status:modalAtt,notes:document.getElementById('editNotes').value||null};
+    if(showP){
+        u.practice_points  =+document.getElementById('editPracticePoints').value||0;
+        u.practice_possible=+document.getElementById('editPracticePossible').value||0;
+        u.act_points       =+document.getElementById('editActPoints').value||0;
+        u.act_possible     =+document.getElementById('editActPossible').value||0;
+        u.work_points      =+document.getElementById('editWorkPoints').value||0;
+        u.work_possible    =+document.getElementById('editWorkPossible').value||0;
+        u.respect_points   =+document.getElementById('editRespectPoints').value||0;
+        u.respect_possible =+document.getElementById('editRespectPossible').value||0;
+    } else { u.practice_points=u.practice_possible=u.act_points=u.act_possible=u.work_points=u.work_possible=u.respect_points=u.respect_possible=null; }
+    if(showP&&selectedStudent?.questions) selectedStudent.questions.forEach((q,i)=>{ const inp=document.getElementById(`mq${i}`); const naBtn=inp?.closest('.question-input-row')?.querySelector('.na-btn'); u[`custom_q${i+1}`]=(naBtn?.classList.contains('active'))?null:(inp?.value||null); });
+    try {
+        const {error}=await sb.from('submissions').update(u).eq('id',editingRecord.id);
+        if(error) throw error;
+        fb.className='modal-success'; fb.textContent='✓ Entry updated successfully!';
+        setTimeout(()=>{ closeEditModal(); loadStudentHistory(selectedStudent.id); },1200);
+    } catch(err) { fb.className='modal-error'; fb.textContent='⚠ Could not save: '+err.message; btn.disabled=false; btn.textContent='Save Changes'; }
+});
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

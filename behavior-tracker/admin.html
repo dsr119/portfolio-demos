@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../storage-shim.js"></script>
+<meta name="robots" content="noindex">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Demo District Student Behavior Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.__TRACKER_MODE__="goals"</script><script src="demo-client.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--primary:#2D5B7B;--primary-dark:#1e3a52;--secondary:#F4A259;--accent:#E76F51;--success:#52B788;--success-dark:#40916C;--bg:#F0F4F8;--surface:#FFFFFF;--surface-2:#F8F9FA;--text:#212529;--text-light:#6C757D;--border:#DEE2E6;--error:#DC3545;--shadow-sm:0 2px 8px rgba(0,0,0,0.07);--shadow-md:0 4px 16px rgba(0,0,0,0.10);--radius:12px}
+        body{font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .topbar{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:sticky;top:0;z-index:100}
+        .topbar-logo{font-family:'Public Sans',sans-serif;font-size:1rem;font-weight:700;color:white}.topbar-logo span{color:var(--secondary)}
+        .admin-badge{background:rgba(244,162,89,0.2);border:1px solid rgba(244,162,89,0.4);color:var(--secondary);font-family:'Public Sans',sans-serif;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:0.2rem 0.6rem;border-radius:20px}
+        .topbar-left{display:flex;align-items:center;gap:1rem}.topbar-right{display:flex;gap:0.75rem}
+        .nav-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.45rem 1rem;border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+        .nav-btn:hover{background:rgba(255,255,255,0.2)}
+        .page-wrap{max-width:1400px;margin:0 auto;padding:2rem 1.5rem 4rem}
+        .page-header{margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+        .page-header h1{font-size:2rem;font-weight:700;color:var(--primary);letter-spacing:-0.02em}
+        .page-header .subtitle{color:var(--text-light);font-family:'Public Sans',sans-serif;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.25rem}
+        #recordCount{font-family:'Public Sans',sans-serif;font-size:0.85rem;color:var(--text-light);background:var(--surface);border:1px solid var(--border);padding:0.45rem 0.9rem;border-radius:20px}
+        #recordCount strong{color:var(--primary)}
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.75rem}
+        .stat-card{background:var(--surface);border-radius:var(--radius);padding:1.25rem 1.5rem;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:0.25rem}
+        .stat-card.orange{}.stat-card.green{}.stat-card.red{}
+        .stat-label{font-family:'Public Sans',sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light)}
+        .stat-value{font-size:2rem;font-weight:700;color:var(--primary);line-height:1.1}
+        .stat-card.orange .stat-value{color:var(--secondary)}.stat-card.green .stat-value{color:var(--success-dark)}.stat-card.red .stat-value{color:var(--accent)}
+        .filter-panel{background:var(--surface);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow-sm);margin-bottom:1.5rem;}
+        .filter-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+        .filter-panel-header h2{font-size:1rem;font-weight:700;color:var(--primary)}
+        .filter-actions{display:flex;gap:0.5rem}
+        .filter-btn{background:transparent;border:1.5px solid var(--border);color:var(--text-light);padding:0.35rem 0.85rem;border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+        .filter-btn.primary{background:var(--primary);color:white;border-color:var(--primary)}
+        .filter-btn.primary:hover{background:var(--primary-dark);border-color:var(--primary-dark);color:white}
+        .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+        .filter-group{display:flex;flex-direction:column;gap:0.4rem}
+        .filter-group label{font-size:0.8rem;font-weight:600;color:var(--text-light);font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.06em}
+        .filter-group input,.filter-group select{width:100%;padding:0.65rem 0.9rem;border:2px solid var(--border);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.92rem;background:var(--surface-2);color:var(--text);transition:all 0.2s}
+        .filter-group input:focus,.filter-group select:focus{outline:none;border-color:var(--secondary);background:var(--surface)}
+        .table-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+        .table-toolbar{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;background:var(--surface-2)}
+        .sort-select{padding:0.4rem 0.75rem;border:1.5px solid var(--border);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.85rem;background:var(--surface);cursor:pointer}
+        .sort-select:focus{outline:none;border-color:var(--primary)}
+        .table-scroll{overflow-x:auto}
+        table{width:100%;border-collapse:collapse;font-size:0.88rem}
+        thead tr{background:linear-gradient(135deg,var(--primary),var(--primary-dark))}
+        thead th{padding:0.85rem 1rem;text-align:left;font-family:'Public Sans',sans-serif;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.85);white-space:nowrap;cursor:pointer;user-select:none}
+        thead th:hover{color:white} thead th.sorted{color:var(--secondary)}
+        tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s}
+        tbody tr:last-child{border-bottom:none} tbody tr:hover{background:#F0F4F8}
+        tbody td{padding:0.75rem 1rem;vertical-align:middle}
+        .td-name{font-weight:600;color:var(--text)}.td-staff{color:var(--text-light);font-size:0.85rem}
+        .td-classroom{font-family:'Public Sans',sans-serif;font-size:0.8rem;font-weight:700;color:var(--primary);background:rgba(45,91,123,0.08);padding:0.2rem 0.55rem;border-radius:6px;display:inline-block}
+        .td-date{font-family:'Public Sans',sans-serif;font-size:0.8rem;color:var(--text-light);white-space:nowrap}
+        .status-pill{display:inline-block;padding:0.2rem 0.65rem;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap}
+        .status-pill.present{background:#D4EDDA;color:#1A6535}.status-pill.absent{background:#FFF3CD;color:#856404}.status-pill.suspended{background:#F8D7DA;color:#842029}
+        .points-display{display:flex;align-items:center;gap:0.3rem;white-space:nowrap}
+        .points-earned{font-weight:700;color:var(--primary)}.points-slash,.points-possible{color:var(--text-light);font-size:0.82rem}
+        .points-pct{font-size:0.75rem;font-weight:700;padding:0.15rem 0.45rem;border-radius:12px;margin-left:0.2rem}
+        .pct-high{background:#D4EDDA;color:#1A6535}.pct-mid{background:#FFF3CD;color:#856404}.pct-low{background:#F8D7DA;color:#842029}.pct-na{background:#E9ECEF;color:#6C757D}
+        .notes-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:0.82rem;cursor:help}
+        .edit-row-btn{padding:0.3rem 0.8rem;background:transparent;border:1.5px solid var(--primary);color:var(--primary);border-radius:6px;font-family:'Public Sans',sans-serif;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .edit-row-btn:hover{background:var(--primary);color:white}
+        .pagination{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;background:var(--surface-2)}
+        .page-info{font-size:0.82rem;color:var(--text-light);font-family:'Public Sans',sans-serif}
+        .page-btns{display:flex;gap:0.35rem;flex-wrap:wrap}
+        .page-btn{padding:0.35rem 0.7rem;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);font-family:'Public Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;color:var(--text)}
+        .page-btn:hover{border-color:var(--primary);color:var(--primary)}.page-btn.active{background:var(--primary);color:white;border-color:var(--primary)}.page-btn:disabled{opacity:0.4;cursor:not-allowed}
+        .table-placeholder{padding:3rem;text-align:center;color:var(--text-light)}
+        .spinner-big{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .fade-in{animation:fadeIn 0.25s ease-in}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        /* Modal */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;opacity:0;transition:opacity 0.25s;pointer-events:none}
+        .modal-overlay.open{opacity:1;pointer-events:all}
+        .modal{background:var(--surface);border-radius:20px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.25);transform:translateY(24px);transition:transform 0.3s;overflow:hidden}
+        .modal-overlay.open .modal{transform:translateY(0)}
+        .modal-header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between}
+        .modal-header h3{color:white;font-size:1.2rem;font-weight:700}
+        .modal-subtitle{color:rgba(255,255,255,0.7);font-size:0.85rem;font-family:'Public Sans',sans-serif;margin-top:0.2rem}
+        .modal-close{width:36px;height:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .modal-close:hover{background:rgba(255,255,255,0.3)}
+        .modal-body{padding:2rem;overflow-y:auto;max-height:70vh}
+        .modal-section{margin-bottom:1.75rem;padding-bottom:1.75rem;border-bottom:1px solid var(--border)}
+        .modal-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+        .modal-section-title{font-size:0.8rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light);margin-bottom:1rem;font-weight:700}
+        .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .modal-row.triple{grid-template-columns:1fr 1fr 1fr}
+        @media(max-width:600px){.modal-row,.modal-row.triple{grid-template-columns:1fr}}
+        .modal-field label{font-size:0.88rem;margin-bottom:0.4rem;display:block;font-weight:500}
+        .modal-field select,.modal-field input,.modal-field textarea{width:100%;padding:0.65rem 0.85rem;border:2px solid var(--border);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.95rem;background:var(--surface)}
+        .modal-field select:focus,.modal-field input:focus,.modal-field textarea:focus{outline:none;border-color:var(--primary)}
+        .modal-att-opts{display:flex;gap:0.75rem;flex-wrap:wrap}
+        .modal-att-btn{flex:1;min-width:100px;padding:0.65rem;border:2px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-family:'Public Sans',sans-serif;font-size:0.88rem;font-weight:600;transition:all 0.2s;text-align:center}
+        .modal-att-btn.sel-present{background:var(--primary);color:white;border-color:var(--primary)}
+        .modal-att-btn.sel-absent{background:var(--secondary);color:white;border-color:var(--secondary)}
+        .modal-att-btn.sel-suspended{background:var(--accent);color:white;border-color:var(--accent)}
+        .modal-paws-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .modal-paws-card{background:#F8F9FA;border:2px solid var(--border);border-radius:10px;padding:1rem}
+        .modal-paws-card h4{font-size:0.8rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;color:var(--primary);margin-bottom:0.75rem}
+        .modal-paws-pts{display:flex;align-items:flex-end;gap:0.4rem}
+        .modal-paws-pts input{width:100%;padding:0.55rem;border:2px solid var(--border);border-radius:6px;font-weight:600;color:var(--primary)}
+        .sep{font-size:1.2rem;font-weight:700;color:var(--primary);padding-bottom:0.5rem}
+        .modal-footer{padding:1.25rem 2rem;background:#F8F9FA;border-top:1px solid var(--border);display:flex;gap:1rem;justify-content:flex-end}
+        .modal-cancel-btn{padding:0.75rem 1.5rem;background:transparent;border:2px solid var(--border);border-radius:10px;color:var(--text-light);font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer}
+        .modal-save-btn{padding:0.75rem 1.75rem;background:linear-gradient(135deg,var(--success),var(--success-dark));border:none;border-radius:10px;color:white;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer}
+        .modal-save-btn:disabled{background:var(--border);cursor:not-allowed}
+        .modal-feedback{padding:0.65rem 1rem;border-radius:8px;font-size:0.9rem;font-weight:600;text-align:center;margin-bottom:1rem}
+        .modal-feedback.success{color:#1A6535;background:#D4EDDA}.modal-feedback.error{color:#842029;background:#F8D7DA}.modal-feedback.hidden{display:none}
+        #loadingBar{text-align:center;padding:0.5rem 0;color:var(--text-light);font-size:0.88rem}
+    </style>
+    <link rel="stylesheet" href="assets/brand.css">
+    <link rel="icon" href="assets/logo.svg" type="image/png">
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a class="topbar-logo" href="intakeForm.html" aria-label="Demo District Student Behavior Tracker home">
+      <img src="assets/logo.svg" alt="Demo District">
+      <span class="brand-copy"><strong>Student Behavior Tracker</strong><small>Day Treatment Program</small></span>
+    </a>
+    <span class="admin-badge">Admin</span>
+  </div>
+  <div class="topbar-right">
+    <a href="dashboard.html" class="nav-btn">Dashboard</a>
+    <a href="pointbank.html" class="nav-btn">Point Bank</a>
+    <a href="students.html" class="nav-btn">Students</a>
+    <a href="intakeForm.html" class="nav-btn">Intake Form</a>
+  </div>
+</nav>
+<div class="page-wrap">
+    <div class="page-header">
+        <div><h1>Admin Dashboard</h1><div class="subtitle">Submission Records</div></div>
+        <div id="recordCount">Showing <strong id="shownCount">—</strong> of <strong id="totalCount">—</strong> records</div>
+    </div>
+    <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value" id="statTotal">—</div></div>
+        <div class="stat-card green"><div class="stat-label">Present</div><div class="stat-value" id="statPresent">—</div></div>
+        <div class="stat-card orange"><div class="stat-label">Absent</div><div class="stat-value" id="statAbsent">—</div></div>
+        <div class="stat-card red"><div class="stat-label">Suspended</div><div class="stat-value" id="statSuspended">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg PAWS %</div><div class="stat-value" id="statAvgPaws">—</div></div>
+    </div>
+    <div class="filter-panel">
+        <div class="filter-panel-header">
+            <h2>Filters</h2>
+            <div class="filter-actions">
+                <button class="filter-btn" id="clearFiltersBtn">Clear All</button>
+                <button class="filter-btn primary" id="loadRecordsBtn">Load Records</button>
+            </div>
+        </div>
+        <div id="loadingBar" class="hidden">Loading records…</div>
+        <div class="filter-grid">
+            <div class="filter-group"><label for="filterStudent">Student <span style="color:var(--accent);font-size:0.75rem;">or Classroom required</span></label><select id="filterStudent"><option value="">All Students</option></select></div>
+            <div class="filter-group"><label for="filterTeacher">Teacher / Staff</label><select id="filterTeacher"><option value="">All Staff</option></select></div>
+            <div class="filter-group"><label for="filterClassroom">Classroom <span style="color:var(--accent);font-size:0.75rem;">or Student required</span></label><select id="filterClassroom"><option value="">All Classrooms</option></select></div>
+            <div class="filter-group"><label for="filterAttendance">Attendance</label><select id="filterAttendance"><option value="">All Statuses</option><option value="yes">Present</option><option value="absent">Absent</option><option value="suspended">Suspended</option></select></div>
+            <div class="filter-group"><label for="filterDateFrom">Date From</label><input type="date" id="filterDateFrom"></div>
+            <div class="filter-group"><label for="filterDateTo">Date To</label><input type="date" id="filterDateTo"></div>
+        </div>
+    </div>
+    <div class="table-card">
+        <div class="table-toolbar">
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+                <span style="font-size:0.82rem;color:var(--text-light);font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.05em;">Sort by</span>
+                <select class="sort-select" id="sortSelect">
+                    <option value="date-desc">Date (newest)</option>
+                    <option value="date-asc">Date (oldest)</option>
+                    <option value="student-asc">Student A–Z</option>
+                    <option value="student-desc">Student Z–A</option>
+                    <option value="staff-asc">Staff A–Z</option>
+                    <option value="paws-desc">PAWS % high–low</option>
+                    <option value="paws-asc">PAWS % low–high</option>
+                </select>
+            </div>
+            <div>Show <select id="rowsPerPage" class="sort-select"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option></select> rows</div>
+        </div>
+        <div class="table-scroll">
+            <table id="submissionsTable">
+                <thead><tr>
+                    <th>Date</th><th>Student</th><th>Staff</th><th>Room</th>
+                    <th>Attendance</th><th>PAWS Points</th><th>Step, Day</th><th>Notes</th><th></th>
+                </tr></thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="9"><div class="table-placeholder"><p>Select a <strong>Student</strong> or <strong>Classroom</strong>, then click <strong>Load Records</strong>.</p></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" id="paginationBar">
+            <div class="page-info">Showing <strong id="pageFrom">—</strong>–<strong id="pageTo">—</strong> of <strong id="pageTotal">—</strong></div>
+            <div class="page-btns" id="pageBtns"></div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editModalOverlay" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <div><h3 id="modalTitle">Edit Entry</h3><div class="modal-subtitle" id="modalSubtitle"></div></div>
+            <button class="modal-close" id="modalCloseBtn">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalFeedback" class="modal-feedback hidden"></div>
+            <div class="modal-section">
+                <div class="modal-section-title">Entry Details</div>
+                <div class="modal-row triple">
+                    <div class="modal-field"><label>Student</label><select id="editStudent"></select></div>
+                    <div class="modal-field"><label>Staff</label><select id="editStaff"></select></div>
+                    <div class="modal-field"><label>Date</label><input type="date" id="editDate"></div>
+                </div>
+                <div style="margin-top:1rem;" class="modal-field"><label>Classroom</label><select id="editClassroom"></select></div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-section-title">Attendance Status</div>
+                <div class="modal-att-opts">
+                    <button type="button" class="modal-att-btn" data-val="yes">Present</button>
+                    <button type="button" class="modal-att-btn" data-val="absent">Absent</button>
+                    <button type="button" class="modal-att-btn" data-val="suspended">Suspended</button>
+                </div>
+            </div>
+            <div class="modal-section" id="modalPawsSection">
+                <div class="modal-section-title">PAWS Behavior Points</div>
+                <div class="modal-paws-grid">
+                    <div class="modal-paws-card"><h4>P · Practice Safety</h4><div class="modal-paws-pts"><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editPracticePoints" min="0" value="0"></div><div class="sep">/</div><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editPracticePossible" min="0" value="30"></div></div></div>
+                    <div class="modal-paws-card"><h4>A · Act Responsibly</h4><div class="modal-paws-pts"><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editActPoints" min="0" value="0"></div><div class="sep">/</div><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editActPossible" min="0" value="30"></div></div></div>
+                    <div class="modal-paws-card"><h4>W · Work Hard</h4><div class="modal-paws-pts"><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editWorkPoints" min="0" value="0"></div><div class="sep">/</div><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editWorkPossible" min="0" value="30"></div></div></div>
+                    <div class="modal-paws-card"><h4>S · Show Respect</h4><div class="modal-paws-pts"><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Earned</label><input type="number" id="editRespectPoints" min="0" value="0"></div><div class="sep">/</div><div class="points-group" style="flex:1"><label style="font-size:0.8rem;display:block;">Possible</label><input type="number" id="editRespectPossible" min="0" value="30"></div></div></div>
+                </div>
+            </div>
+            <div class="modal-section hidden" id="modalStepDaySection"><div class="modal-section-title">Step, Day</div><div class="modal-field"><label>Enter as step,day (example: 5,3 means step 5, day 3)</label><input type="text" id="editStepDay" maxlength="20" inputmode="numeric" placeholder="5,3" autocomplete="off"></div></div>
+            <div class="modal-section"><div class="modal-section-title">Additional Notes</div><div class="modal-field"><textarea id="editNotes" style="min-height:80px;" placeholder="Notes…"></textarea></div></div>
+            <div class="modal-section hidden" id="modalTxGoalsSection"><div class="modal-section-title">Tx Goals</div><div id="modalTxGoalFields"></div></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" id="modalDeleteBtn" style="padding:0.75rem 1.25rem;background:transparent;border:2px solid var(--error);color:var(--error);border-radius:10px;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;margin-right:auto;transition:all 0.2s;" onmouseover="this.style.background='var(--error)';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='var(--error)'">Delete Entry</button>
+            <button type="button" class="modal-cancel-btn" id="modalCancelBtn">Cancel</button>
+            <button type="button" class="modal-save-btn" id="modalSaveBtn">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'demo://in-memory';
+const SUPABASE_ANON = 'demo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allRecords=[], staffList=[], classroomList=[], studentList=[];
+let currentPage=1, pageSize=50, totalRecords=0;
+let sortCol='date', sortDir='desc';
+let editingRecord=null, modalAtt='yes', isLoading=false;
+
+// ── Config cache ──────────────────────────────────────────────
+async function fetchConfig() {
+    const KEY='php_st_config_sql_v3',TTL=30*60*1000;
+    try{const c=sessionStorage.getItem(KEY);if(c){const{ts,data}=JSON.parse(c);if(Date.now()-ts<TTL)return data;}}catch(e){}
+    const [s,c,st]=await Promise.all([
+        sb.from('staff').select('id,name').order('name'),
+        sb.from('classrooms').select('id,room_number').order('room_number'),
+        sb.from('students').select('id,classroom_id,name,active,use_pbis,use_step_day,tx_goal_1_name,tx_goal_2_name').eq('active',true).order('name'),
+    ]);
+    const data={staff:s.data||[],classrooms:c.data||[],students:st.data||[]};
+    try{sessionStorage.setItem(KEY,JSON.stringify({ts:Date.now(),data}));}catch(e){}
+    return data;
+}
+async function loadAll() {
+    try {
+        const cfg = await fetchConfig();
+        staffList = cfg.staff; classroomList = cfg.classrooms;
+        studentList = cfg.students.map(s=>({id:s.id,name:s.name,classroom_id:s.classroom_id,useStepDay:!!s.use_step_day,txGoals:[s.tx_goal_1_name||'',s.tx_goal_2_name||'']}));
+        studentList.sort((a,b)=>a.name.localeCompare(b.name));
+        populateFilters();
+        populateModalDropdowns();
+    } catch(err) { showTableError('Failed to connect to Supabase: '+err.message); }
+}
+
+function populateFilters() {
+    const sf=document.getElementById('filterStudent');
+    studentList.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sf.appendChild(o);});
+    const tf=document.getElementById('filterTeacher');
+    staffList.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;tf.appendChild(o);});
+    const cf=document.getElementById('filterClassroom');
+    classroomList.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent='Room '+c.room_number;cf.appendChild(o);});
+}
+function populateModalDropdowns() {
+    const es=document.getElementById('editStudent');
+    studentList.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;es.appendChild(o);});
+    const ess=document.getElementById('editStaff');
+    staffList.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;ess.appendChild(o);});
+    const ec=document.getElementById('editClassroom');
+    classroomList.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent='Room '+c.room_number;ec.appendChild(o);});
+}
+
+window.addEventListener('DOMContentLoaded',async()=>{
+    await loadAll();
+    document.getElementById('loadRecordsBtn').addEventListener('click',()=>{currentPage=1;loadSubmissions();});
+    document.getElementById('clearFiltersBtn').addEventListener('click',clearFilters);
+    document.getElementById('sortSelect').addEventListener('change',onSortChange);
+    document.getElementById('rowsPerPage').addEventListener('change',()=>{pageSize=parseInt(document.getElementById('rowsPerPage').value);currentPage=1;renderTable();});
+    document.getElementById('modalCloseBtn').addEventListener('click',closeModal);
+    document.getElementById('modalCancelBtn').addEventListener('click',closeModal);
+    document.getElementById('editModalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('editModalOverlay'))closeModal();});
+    document.querySelectorAll('.modal-att-btn').forEach(btn=>btn.addEventListener('click',()=>{
+        modalAtt=btn.dataset.val;highlightModalAtt();
+        document.getElementById('modalPawsSection').classList.toggle('hidden',modalAtt!=='yes');
+        document.getElementById('modalTxGoalsSection').classList.toggle('hidden',modalAtt!=='yes');
+        updateStepDayVisibility();
+    }));
+    document.getElementById('editStudent').addEventListener('change',updateStepDayVisibility);
+    document.getElementById('modalSaveBtn').addEventListener('click',saveEdit);
+    document.getElementById('modalDeleteBtn').addEventListener('click', deleteEntry);
+});
+
+// ── Load Submissions ──────────────────────────────────────────
+async function loadSubmissions() {
+    const studentId  = document.getElementById('filterStudent').value;
+    const classroomId= document.getElementById('filterClassroom').value;
+    if (!studentId && !classroomId) {
+        showTablePrompt('Please select a <strong>Student</strong> or <strong>Classroom</strong> before loading records.');
+        return;
+    }
+    if (isLoading) return;
+    isLoading=true;
+    const btn=document.getElementById('loadRecordsBtn'); btn.disabled=true; btn.textContent='Loading…';
+    document.getElementById('loadingBar').classList.remove('hidden');
+
+    try {
+        const staffId    = document.getElementById('filterTeacher').value;
+        const attendance = document.getElementById('filterAttendance').value;
+        const dateFrom   = document.getElementById('filterDateFrom').value;
+        const dateTo     = document.getElementById('filterDateTo').value;
+
+        let query = sb.from('submissions')
+            .select('id,entry_date,attendance_status,practice_points,practice_possible,act_points,act_possible,work_points,work_possible,respect_points,respect_possible,notes,staff:staff_id(id,name),classroom:classroom_id(id,room_number),student:student_id(id,name,use_pbis,tx_goal_1_name,tx_goal_2_name),tx_goal_1_progress,tx_goal_1_score,tx_goal_1_comment,tx_goal_2_progress,tx_goal_2_score,tx_goal_2_comment');
+
+        if (studentId)    query = query.eq('student_id', studentId);
+        if (classroomId)  query = query.eq('classroom_id', classroomId);
+        if (staffId)      query = query.eq('staff_id', staffId);
+        if (attendance)   query = query.eq('attendance_status', attendance);
+        if (dateFrom)     query = query.gte('entry_date', dateFrom);
+        if (dateTo)       query = query.lte('entry_date', dateTo);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        allRecords = (data||[]).map(r => ({
+            id:              r.id,
+            entryDate:       r.entry_date,
+            attendanceStatus:r.attendance_status,
+            staffName:       r.staff?.name||'—',
+            staffId:         r.staff?.id,
+            classroom:       r.classroom?.room_number||'—',
+            classroomId:     r.classroom?.id,
+            studentName:     r.student?.name||'—',
+            studentId:       r.student?.id,
+            usePBIS:         r.student?.use_pbis,
+            txGoalNames:     [r.student?.tx_goal_1_name||'',r.student?.tx_goal_2_name||''],
+            practicePoints:  r.practice_points,
+            practicePossible:r.practice_possible,
+            actPoints:       r.act_points,
+            actPossible:     r.act_possible,
+            workPoints:      r.work_points,
+            workPossible:    r.work_possible,
+            respectPoints:   r.respect_points,
+            respectPossible: r.respect_possible,
+            notes:           r.notes,
+            stepDay:         r.step_day||'',
+            pct:            calcPct(r),
+            earnedPoints:    calcEarned(r),
+            possiblePoints:  calcPossible(r),
+            txGoals:         [1,2].map(n=>({progress:r[`tx_goal_${n}_progress`]||'',score:r[`tx_goal_${n}_score`],comment:r[`tx_goal_${n}_comment`]||''})),
+        }));
+
+        totalRecords = allRecords.length;
+        sortRecords();
+        currentPage=1;
+        renderTable();
+        updateStats();
+    } catch(err) { showTableError('Error loading records: '+err.message); }
+    finally {
+        isLoading=false;
+        const b=document.getElementById('loadRecordsBtn'); b.disabled=false; b.textContent='Load Records';
+        document.getElementById('loadingBar').classList.add('hidden');
+    }
+}
+
+function calcPct(r) {
+    const e=[r.practice_points,r.act_points,r.work_points,r.respect_points].map(Number);
+    const p=[r.practice_possible,r.act_possible,r.work_possible,r.respect_possible].map(Number);
+    if (r.attendance_status!=='yes'||e.some(isNaN)||p.some(isNaN)) return null;
+    const tp=p.reduce((a,b)=>a+b,0); return tp>0?Math.round(e.reduce((a,b)=>a+b,0)/tp*100):null;
+}
+function calcEarned(r){const e=[r.practice_points,r.act_points,r.work_points,r.respect_points].map(Number);return e.some(isNaN)?null:e.reduce((a,b)=>a+b,0);}
+function calcPossible(r){const p=[r.practice_possible,r.act_possible,r.work_possible,r.respect_possible].map(Number);return p.some(isNaN)?null:p.reduce((a,b)=>a+b,0);}
+
+function clearFilters() {
+    ['filterStudent','filterTeacher','filterClassroom','filterAttendance'].forEach(id=>document.getElementById(id).value='');
+    ['filterDateFrom','filterDateTo'].forEach(id=>document.getElementById(id).value='');
+    allRecords=[]; totalRecords=0;
+    showTablePrompt('Select a <strong>Student</strong> or <strong>Classroom</strong>, then click <strong>Load Records</strong>.');
+    updateStats();
+}
+
+// ── Sort ──────────────────────────────────────────────────────
+function onSortChange() {
+    const map={'date-desc':['date','desc'],'date-asc':['date','asc'],'student-asc':['student','asc'],'student-desc':['student','desc'],'staff-asc':['staff','asc'],'paws-desc':['paws','desc'],'paws-asc':['paws','asc']};
+    [sortCol,sortDir]=map[document.getElementById('sortSelect').value]||['date','desc'];
+    sortRecords(); renderTable();
+}
+function sortRecords() {
+    allRecords.sort((a,b)=>{
+        let av,bv;
+        if(sortCol==='date'){av=a.entryDate;bv=b.entryDate;}
+        else if(sortCol==='student'){av=a.studentName;bv=b.studentName;}
+        else if(sortCol==='staff'){av=a.staffName;bv=b.staffName;}
+        else if(sortCol==='paws'){av=a.pct??-1;bv=b.pct??-1;}
+        else{av=a.entryDate;bv=b.entryDate;}
+        if(av<bv)return sortDir==='asc'?-1:1;
+        if(av>bv)return sortDir==='asc'?1:-1;
+        return 0;
+    });
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+function updateStats() {
+    const p=allRecords.filter(r=>r.attendanceStatus==='yes').length;
+    const a=allRecords.filter(r=>r.attendanceStatus==='absent').length;
+    const s=allRecords.filter(r=>r.attendanceStatus==='suspended').length;
+    const pr=allRecords.filter(r=>r.pct!==null);
+    const avg=pr.length?Math.round(pr.reduce((s,r)=>s+r.pct,0)/pr.length):null;
+    document.getElementById('statTotal').textContent=totalRecords;
+    document.getElementById('statPresent').textContent=p;
+    document.getElementById('statAbsent').textContent=a;
+    document.getElementById('statSuspended').textContent=s;
+    document.getElementById('statAvgPaws').textContent=avg!==null?avg+'%':'—';
+}
+
+// ── Render Table ──────────────────────────────────────────────
+function renderTable() {
+    const tbody=document.getElementById('tableBody');
+    const start=(currentPage-1)*pageSize;
+    const page=allRecords.slice(start,start+pageSize);
+    const total=totalRecords;
+    const pages=Math.ceil(total/pageSize)||1;
+    document.getElementById('shownCount').textContent=total===0?0:`${start+1}–${Math.min(start+page.length,total)}`;
+    document.getElementById('totalCount').textContent=total;
+    document.getElementById('pageFrom').textContent=total===0?0:start+1;
+    document.getElementById('pageTo').textContent=Math.min(start+page.length,total);
+    document.getElementById('pageTotal').textContent=total;
+    if(!page.length){tbody.innerHTML=`<tr><td colspan="9"><div class="table-placeholder"><p>No records match your filters.</p></div></td></tr>`;renderPagination(0,1);return;}
+    tbody.innerHTML=page.map((r,i)=>{
+        const d=r.entryDate?new Date(r.entryDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+        const sm={yes:['present','Present'],absent:['absent','Absent'],suspended:['suspended','Suspended']};
+        const [pc,pl]=sm[r.attendanceStatus]||['absent',r.attendanceStatus||'—'];
+        let pts='<span class="status-pill pct-na">N/A</span>';
+        if(r.pct!==null){const cls=r.pct>=80?'pct-high':r.pct>=60?'pct-mid':'pct-low';pts=`<div class="points-display"><span class="points-earned">${r.earnedPoints}</span><span class="points-slash">/</span><span class="points-possible">${r.possiblePoints}</span><span class="points-pct ${cls}">${r.pct}%</span></div>`;}
+        const note=r.notes?(r.notes.length>40?r.notes.substring(0,40)+'…':r.notes):'<span style="color:var(--border)">—</span>';
+        return `<tr class="fade-in"><td class="td-date">${d}</td><td class="td-name">${esc(r.studentName)}</td><td class="td-staff">${esc(r.staffName)}</td><td><span class="td-classroom">${esc(r.classroom)}</span></td><td><span class="status-pill ${pc}">${pl}</span></td><td>${pts}</td><td>${r.stepDay?esc(r.stepDay):'<span style="color:var(--border)">—</span>'}</td><td><div class="notes-cell" title="${esc(r.notes||'')}">${note}</div></td><td><button class="edit-row-btn" data-idx="${start+i}">Edit</button></td></tr>`;
+    }).join('');
+    tbody.querySelectorAll('.edit-row-btn').forEach(btn=>btn.addEventListener('click',()=>openModal(allRecords[+btn.dataset.idx])));
+    renderPagination(total,pages);
+}
+
+function renderPagination(total,pages) {
+    const c=document.getElementById('pageBtns'); c.innerHTML='';
+    if(pages<=1)return;
+    const add=(label,page,disabled,active)=>{const b=document.createElement('button');b.className='page-btn'+(active?' active':'');b.textContent=label;b.disabled=disabled;b.addEventListener('click',()=>{currentPage=page;renderTable();});c.appendChild(b);};
+    add('‹',currentPage-1,currentPage===1,false);
+    const range=pages<=7?Array.from({length:pages},(_,i)=>i+1):currentPage<=4?[1,2,3,4,5,'…',pages]:currentPage>=pages-3?[1,'…',pages-4,pages-3,pages-2,pages-1,pages]:[1,'…',currentPage-1,currentPage,currentPage+1,'…',pages];
+    range.forEach(p=>{if(p==='…'){const el=document.createElement('span');el.textContent='…';el.style.cssText='padding:0 0.3rem;color:var(--text-light);align-self:center;';c.appendChild(el);}else add(p,p,false,p===currentPage);});
+    add('›',currentPage+1,currentPage===pages,false);
+}
+
+function showTablePrompt(msg){document.getElementById('tableBody').innerHTML=`<tr><td colspan="9"><div class="table-placeholder"><p>${msg}</p></div></td></tr>`;document.getElementById('shownCount').textContent='—';document.getElementById('totalCount').textContent='—';}
+function showTableError(msg){document.getElementById('tableBody').innerHTML=`<tr><td colspan="9"><div class="table-placeholder"><p style="color:var(--error)">${msg}</p></div></td></tr>`;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Step, Day ("5,3" = step 5, day 3) ─────────────────────────
+function parseStepDay(raw) {
+    const m=/^\s*(\d{1,3})\s*[,.\s]\s*(\d{1,3})\s*$/.exec(raw||'');
+    return m?`${parseInt(m[1],10)},${parseInt(m[2],10)}`:null;
+}
+// Shown for present entries when the selected student uses Step, Day (or the entry already has one).
+function stepDayVisible() {
+    if(modalAtt!=='yes')return false;
+    const s=studentList.find(x=>x.id===parseInt(document.getElementById('editStudent').value));
+    return !!(s&&s.useStepDay)||!!(editingRecord&&editingRecord.stepDay);
+}
+function updateStepDayVisibility() {
+    document.getElementById('modalStepDaySection').classList.toggle('hidden',!stepDayVisible());
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+function openModal(record) {
+    editingRecord=record; modalAtt=record.attendanceStatus||'yes';
+    document.getElementById('modalTitle').textContent='Edit Entry';
+    document.getElementById('modalSubtitle').textContent=`${record.studentName} · ${record.entryDate?new Date(record.entryDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):''}`;
+    document.getElementById('editStudent').value=record.studentId||'';
+    document.getElementById('editStaff').value=record.staffId||'';
+    document.getElementById('editDate').value=record.entryDate||'';
+    document.getElementById('editClassroom').value=record.classroomId||'';
+    document.getElementById('editNotes').value=record.notes||'';
+    document.getElementById('editStepDay').value=record.stepDay||'';
+    highlightModalAtt();
+    updateStepDayVisibility();
+    const showP=modalAtt==='yes';
+    document.getElementById('modalPawsSection').classList.toggle('hidden',!showP);
+    if(showP){
+        document.getElementById('editPracticePoints').value =record.practicePoints??0;
+        document.getElementById('editPracticePossible').value=record.practicePossible??30;
+        document.getElementById('editActPoints').value      =record.actPoints??0;
+        document.getElementById('editActPossible').value    =record.actPossible??30;
+        document.getElementById('editWorkPoints').value     =record.workPoints??0;
+        document.getElementById('editWorkPossible').value   =record.workPossible??30;
+        document.getElementById('editRespectPoints').value  =record.respectPoints??0;
+        document.getElementById('editRespectPossible').value=record.respectPossible??30;
+    }
+    renderModalTxGoals(record);
+    document.getElementById('modalFeedback').className='modal-feedback hidden';
+    document.getElementById('modalSaveBtn').disabled=false; document.getElementById('modalSaveBtn').textContent='Save Changes';
+    document.getElementById('editModalOverlay').classList.add('open'); document.body.style.overflow='hidden';
+}
+function closeModal(){document.getElementById('editModalOverlay').classList.remove('open');document.body.style.overflow='';editingRecord=null;}
+function highlightModalAtt(){
+    document.querySelectorAll('.modal-att-btn').forEach(b=>b.classList.remove('sel-present','sel-absent','sel-suspended'));
+    const t=document.querySelector(`.modal-att-btn[data-val="${modalAtt}"]`);
+    if(t)t.classList.add(modalAtt==='yes'?'sel-present':modalAtt==='absent'?'sel-absent':'sel-suspended');
+}
+function renderModalTxGoals(record) {
+    const sec=document.getElementById('modalTxGoalsSection'),flds=document.getElementById('modalTxGoalFields');
+    sec.classList.toggle('hidden',modalAtt!=='yes');
+    const labels=[['yes','Yes, Progress Was Made'],['partial','Partial Progress Was Made'],['no','No Progress Was Made']];
+    flds.innerHTML=(record.txGoalNames||['','']).map((name,i)=>{
+        const n=i+1,g=record.txGoals?.[i]||{};
+        const progress=`<option value="">— Select progress —</option>${labels.map(([v,l])=>`<option value="${v}"${g.progress===v?' selected':''}>${l}</option>`).join('')}`;
+        const scores=`<option value="">— Select score —</option>${Array.from({length:10},(_,j)=>j+1).map(v=>`<option value="${v}"${String(g.score)===String(v)?' selected':''}>${v}</option>`).join('')}`;
+        return `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:0.85rem">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:0.75rem">Tx Goal ${n}: ${esc(name||'Goal name not configured')}</div>
+            <div class="modal-row"><div class="modal-field"><label>Progress</label><select data-tx="${n}" data-field="progress">${progress}</select></div><div class="modal-field"><label>Overall Score (1–10)</label><select data-tx="${n}" data-field="score">${scores}</select></div></div>
+            <div class="modal-field" style="margin-top:0.75rem"><label>Comment</label><textarea data-tx="${n}" data-field="comment" style="min-height:65px" placeholder="Comment about progress…">${esc(g.comment||'')}</textarea></div>
+        </div>`;
+    }).join('');
+}
+
+async function deleteEntry() {
+    if (!editingRecord) return;
+    if (!confirm(`Delete this entry for ${editingRecord.studentName} on ${editingRecord.entryDate}? This cannot be undone.`)) return;
+    const btn = document.getElementById('modalDeleteBtn');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+        const { error } = await sb.from('submissions').delete().eq('id', editingRecord.id);
+        if (error) throw error;
+        allRecords = allRecords.filter(r => r.id !== editingRecord.id);
+        totalRecords = allRecords.length;
+        closeModal();
+        renderTable();
+        updateStats();
+    } catch(err) {
+        alert('Could not delete: ' + err.message);
+        btn.disabled = false; btn.textContent = 'Delete Entry';
+    }
+}
+
+async function saveEdit() {
+    if(!editingRecord)return;
+    const btn=document.getElementById('modalSaveBtn'); btn.disabled=true; btn.textContent='Saving…';
+    const fb=document.getElementById('modalFeedback'); fb.className='modal-feedback hidden';
+    const showP=modalAtt==='yes';
+    const u={
+        student_id:  parseInt(document.getElementById('editStudent').value),
+        staff_id:    parseInt(document.getElementById('editStaff').value),
+        entry_date:  document.getElementById('editDate').value,
+        classroom_id:parseInt(document.getElementById('editClassroom').value),
+        attendance_status:modalAtt,
+        notes:       document.getElementById('editNotes').value||null,
+    };
+    if(showP){
+        u.practice_points  =+document.getElementById('editPracticePoints').value||0;
+        u.practice_possible=+document.getElementById('editPracticePossible').value||0;
+        u.act_points       =+document.getElementById('editActPoints').value||0;
+        u.act_possible     =+document.getElementById('editActPossible').value||0;
+        u.work_points      =+document.getElementById('editWorkPoints').value||0;
+        u.work_possible    =+document.getElementById('editWorkPossible').value||0;
+        u.respect_points   =+document.getElementById('editRespectPoints').value||0;
+        u.respect_possible =+document.getElementById('editRespectPossible').value||0;
+    } else { u.practice_points=u.practice_possible=u.act_points=u.act_possible=u.work_points=u.work_possible=u.respect_points=u.respect_possible=null; }
+    if(showP){
+        for(let n=1;n<=2;n++){
+            const progress=document.querySelector(`#modalTxGoalFields [data-tx="${n}"][data-field="progress"]`)?.value||null;
+            const score=document.querySelector(`#modalTxGoalFields [data-tx="${n}"][data-field="score"]`)?.value;
+            const comment=document.querySelector(`#modalTxGoalFields [data-tx="${n}"][data-field="comment"]`)?.value.trim()||null;
+            if(!progress||!score){fb.textContent='Select progress and an overall score for both Tx Goals.';fb.className='modal-feedback error';btn.disabled=false;btn.textContent='Save Changes';return;}
+            u[`tx_goal_${n}_progress`]=progress;u[`tx_goal_${n}_score`]=parseInt(score);u[`tx_goal_${n}_comment`]=comment;
+        }
+    }else for(let n=1;n<=2;n++){u[`tx_goal_${n}_progress`]=u[`tx_goal_${n}_score`]=u[`tx_goal_${n}_comment`]=null;}
+    // Step, Day: blank is allowed here so older entries can still be saved.
+    if(stepDayVisible()){
+        const raw=document.getElementById('editStepDay').value.trim();
+        const sd=raw?parseStepDay(raw):null;
+        if(raw&&!sd){fb.textContent='Enter Step, Day as two numbers, for example 5,3.';fb.className='modal-feedback error';btn.disabled=false;btn.textContent='Save Changes';return;}
+        u.step_day=sd;
+    }else if(editingRecord.stepDay){u.step_day=null;}
+    try {
+        const {error}=await sb.from('submissions').update(u).eq('id',editingRecord.id);
+        if(error)throw error;
+        fb.textContent='Entry updated successfully!'; fb.className='modal-feedback success';
+        // Update local record
+        Object.assign(editingRecord,{studentId:u.student_id,staffId:u.staff_id,entryDate:u.entry_date,classroomId:u.classroom_id,attendanceStatus:u.attendance_status,notes:u.notes,practicePoints:u.practice_points,practicePossible:u.practice_possible,actPoints:u.act_points,actPossible:u.act_possible,workPoints:u.work_points,workPossible:u.work_possible,respectPoints:u.respect_points,respectPossible:u.respect_possible,txGoals:[1,2].map(n=>({progress:u[`tx_goal_${n}_progress`],score:u[`tx_goal_${n}_score`],comment:u[`tx_goal_${n}_comment`]}))});
+        if('step_day' in u) editingRecord.stepDay=u.step_day||'';
+        editingRecord.pct=calcPct({attendance_status:u.attendance_status,practice_points:u.practice_points,practice_possible:u.practice_possible,act_points:u.act_points,act_possible:u.act_possible,work_points:u.work_points,work_possible:u.work_possible,respect_points:u.respect_points,respect_possible:u.respect_possible});
+        const student=studentList.find(s=>s.id===u.student_id);
+        if(student)editingRecord.studentName=student.name;
+        const staff=staffList.find(s=>s.id===u.staff_id);
+        if(staff)editingRecord.staffName=staff.name;
+        const classroom=classroomList.find(c=>c.id===u.classroom_id);
+        if(classroom)editingRecord.classroom=classroom.room_number;
+        setTimeout(()=>{closeModal();renderTable();updateStats();},1100);
+    } catch(err){fb.textContent='Could not save: '+err.message;fb.className='modal-feedback error';btn.disabled=false;btn.textContent='Save Changes';}
+}
+</script>
+</body>
+</html>

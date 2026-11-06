@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../storage-shim.js"></script>
+<meta name="robots" content="noindex">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Point Bank — Demo District Student Behavior Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #2D5B7B;
+            --primary-dark: #1e3a52;
+            --secondary: #F4A259;
+            --accent: #E76F51;
+            --success: #52B788;
+            --success-dark: #40916C;
+            --gold: #F5C518;
+            --gold-dark: #c49a00;
+            --bg: #F0F4F8;
+            --surface: #FFFFFF;
+            --surface-2: #F8F9FA;
+            --text: #212529;
+            --text-light: #6C757D;
+            --border: #DEE2E6;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --radius: 14px;
+        }
+
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Topbar ── */
+        .topbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .topbar-logo { font-family: 'Public Sans', sans-serif; font-size: 1rem; font-weight: 700; color: white; }
+        .topbar-logo span { color: var(--secondary); }
+        .page-badge {
+            background: rgba(245,197,24,0.2);
+            border: 1px solid rgba(245,197,24,0.4);
+            color: #ffe580;
+            font-family: 'Public Sans', sans-serif;
+            font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            padding: 0.2rem 0.6rem; border-radius: 20px;
+        }
+        .topbar-nav { display: flex; gap: 0.5rem; }
+        .nav-link {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.85);
+            padding: 0.4rem 1rem; border-radius: 8px;
+            font-family: 'Public Sans', sans-serif; font-size: 0.84rem; font-weight: 600;
+            cursor: pointer; text-decoration: none; transition: all 0.2s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.2); color: white; }
+
+        /* ── Page ── */
+        .page-wrap { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+        /* ── Student Selector ── */
+        .selector-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.75rem 2rem;
+            box-shadow: var(--shadow-sm);
+            
+            margin-bottom: 2rem;
+        }
+        .selector-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 1.25rem; }
+        .selector-row { display: flex; gap: 1rem; align-items: flex-end; }
+        @media (max-width: 600px) { .selector-row { flex-direction: column; } }
+        .form-group { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group label { font-size: 0.78rem; font-family: 'Public Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-light); font-weight: 700; }
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border); border-radius: 10px;
+            font-family: 'Public Sans', sans-serif; font-size: 1rem;
+            background: var(--surface-2); color: var(--text);
+            transition: all 0.2s; cursor: pointer;
+        }
+        .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45,91,123,0.1); background: var(--surface); }
+        .view-btn {
+            padding: 0.75rem 1.75rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; border: none; border-radius: 10px;
+            font-family: 'Public Sans', sans-serif; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s; box-shadow: 0 2px 8px rgba(45,91,123,0.25);
+            white-space: nowrap;
+        }
+        .view-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(45,91,123,0.35); }
+        .view-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ── Balance Hero Card ── */
+        .balance-card {
+            border-radius: var(--radius);
+            padding: 2rem 2.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            background: linear-gradient(135deg, #1a3a52 0%, #0d2235 100%);
+        }
+        .balance-card::before {
+            content: '🏆';
+            position: absolute;
+            right: 1.5rem; top: 50%;
+            transform: translateY(-50%);
+            font-size: 5rem;
+            opacity: 0.08;
+            pointer-events: none;
+        }
+        .balance-avatar {
+            width: 60px; height: 60px;
+            background: rgba(245,197,24,0.2);
+            border: 2px solid rgba(245,197,24,0.4);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 700; color: var(--gold);
+            font-family: 'Public Sans', sans-serif;
+            flex-shrink: 0;
+        }
+        .balance-info { flex: 1; }
+        .balance-name { font-size: 1.35rem; font-weight: 700; color: white; letter-spacing: -0.01em; }
+        .balance-classroom { color: rgba(255,255,255,0.5); font-size: 0.82rem; font-family: 'Public Sans', sans-serif; margin-top: 0.15rem; }
+        .balance-amount-wrap { text-align: right; flex-shrink: 0; }
+        .balance-label { font-size: 0.68rem; font-family: 'Public Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.45); margin-bottom: 0.2rem; }
+        .balance-amount {
+            font-size: 3rem; font-weight: 700; font-family: 'Public Sans', sans-serif;
+            color: var(--gold); line-height: 1;
+            
+            transition: all 0.4s ease;
+        }
+        .balance-amount.updating { transform: scale(1.15); color: white; }
+        .balance-pts-label { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem; font-family: 'Public Sans', sans-serif; }
+
+        /* ── Actions Panel ── */
+        .actions-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 600px) { .actions-row { grid-template-columns: 1fr; } }
+
+        .action-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        
+
+        .action-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .action-title .icon-circle {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 700; color: white;
+            flex-shrink: 0;
+        }
+        .add-card  .icon-circle { background: var(--success); }
+        .sub-card  .icon-circle { background: var(--accent); }
+
+        .action-input-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+        .action-input-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; }
+        .action-input-wrap label { font-size: 0.75rem; font-family: 'Public Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-light); font-weight: 700; }
+        .action-input-wrap input[type="number"],
+        .action-input-wrap input[type="date"],
+        .action-input-wrap textarea {
+            width: 100%; padding: 0.65rem 0.85rem;
+            border: 2px solid var(--border); border-radius: 8px;
+            font-family: 'Public Sans', sans-serif; font-size: 1rem;
+            transition: all 0.2s; background: var(--surface-2);
+        }
+        .action-input-wrap input[type="number"]:focus,
+        .action-input-wrap input[type="date"]:focus,
+        .action-input-wrap textarea:focus {
+            outline: none; background: var(--surface);
+        }
+        .add-card .action-input-wrap input:focus  { border-color: var(--success); box-shadow: 0 0 0 3px rgba(82,183,136,0.12); }
+        .sub-card .action-input-wrap input:focus,
+        .sub-card .action-input-wrap textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(231,111,81,0.12); }
+        .action-input-wrap textarea { min-height: 68px; resize: vertical; font-size: 0.9rem; }
+
+        /* Spent-on field (hidden until subtract mode) */
+        .spent-on-wrap { display: flex; flex-direction: column; gap: 0.35rem; }
+        .spent-on-wrap.hidden { display: none; }
+        .spent-on-wrap label { font-size: 0.75rem; font-family: 'Public Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 700; }
+
+        .action-btn {
+            padding: 0.65rem 1.1rem;
+            border: none; border-radius: 8px;
+            font-family: 'Public Sans', sans-serif; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s; white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        }
+        .add-btn { background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%); color: white; }
+        .add-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(82,183,136,0.35); }
+        .sub-btn { background: linear-gradient(135deg, var(--accent) 0%, #c45a40 100%); color: white; }
+        .sub-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(231,111,81,0.35); }
+        .action-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; box-shadow: none; color: var(--text-light); }
+
+        .action-feedback {
+            font-size: 0.82rem; font-weight: 600;
+            padding: 0.5rem 0.75rem; border-radius: 6px;
+            text-align: center;
+        }
+        .action-feedback.success { background: #D4EDDA; color: #1A6535; }
+        .action-feedback.error   { background: #F8D7DA; color: #842029; }
+        .action-feedback.hidden  { display: none; }
+
+        /* ── Ledger ── */
+        .ledger-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .ledger-header {
+            padding: 1.1rem 1.5rem;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ledger-header h3 {
+            font-size: 0.85rem;
+            font-family: 'Public Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .ledger-count {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            background: var(--border);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-family: 'Public Sans', sans-serif;
+        }
+        .ledger-scroll { overflow-x: auto; }
+        table.ledger-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .ledger-table thead tr { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+        .ledger-table thead th { padding: 0.65rem 1rem; text-align: left; font-family: 'Public Sans', sans-serif; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.85); white-space: nowrap; }
+        .ledger-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+        .ledger-table tbody tr:last-child { border-bottom: none; }
+        .ledger-table tbody tr:hover { background: var(--surface-2); }
+        .ledger-table tbody td { padding: 0.65rem 1rem; vertical-align: middle; }
+        .ledger-date { font-family: 'Public Sans', sans-serif; font-size: 0.78rem; color: var(--text-light); white-space: nowrap; }
+        .ledger-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.18rem 0.55rem; border-radius: 12px; white-space: nowrap; }
+        .ledger-type.earned  { background: #D4EDDA; color: #1A6535; }
+        .ledger-type.spent   { background: #F8D7DA; color: #842029; }
+        .ledger-type.added   { background: #D1ECF1; color: #0c5460; }
+        .ledger-amount { font-family: 'Public Sans', sans-serif; font-size: 1rem; font-weight: 700; white-space: nowrap; }
+        .ledger-amount.positive { color: var(--success-dark); }
+        .ledger-amount.negative { color: var(--accent); }
+        .ledger-desc { font-size: 0.82rem; color: var(--text-light); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ledger-running { font-family: 'Public Sans', sans-serif; font-size: 0.82rem; font-weight: 700; text-align: right; }
+
+        /* ── Empty / Loading ── */
+        .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-light); }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.35; }
+        .spinner-wrap { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 2.5rem; color: var(--text-light); font-size: 0.9rem; }
+        .spinner { width: 22px; height: 22px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.35s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* coin animation */
+        @keyframes coinPop { 0%{transform:scale(1)} 40%{transform:scale(1.25)} 70%{transform:scale(0.95)} 100%{transform:scale(1)} }
+        .coin-pop { animation: coinPop 0.45s ease; }
+
+        @media (max-width: 600px) {
+            .topbar { padding: 0 1rem; }
+            .page-wrap { padding: 1.5rem 1rem 4rem; }
+            .balance-card { flex-direction: column; gap: 1rem; }
+            .balance-amount-wrap { text-align: left; }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/brand.css">
+    <link rel="icon" href="assets/logo.svg" type="image/png">
+</head>
+<body>
+
+<nav class="topbar">
+    <div class="topbar-left">
+        <a class="topbar-logo" href="intakeForm.html" aria-label="Demo District Student Behavior Tracker home">
+            <img src="assets/logo.svg" alt="Demo District">
+            <span class="brand-copy"><strong>Student Behavior Tracker</strong><small>Day Treatment Program</small></span>
+        </a>
+        <span class="page-badge">Point Bank</span>
+    </div>
+    <div class="topbar-nav">
+        <a href="admin.html" class="nav-link">Admin</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="students.html" class="nav-link">Students</a>
+        <a href="intakeForm.html" class="nav-link">Intake Form</a>
+    </div>
+</nav>
+
+<div class="page-wrap">
+
+    <!-- Selector -->
+    <div class="selector-card">
+        <h2>Select a Student</h2>
+        <div class="selector-row">
+            <div class="form-group">
+                <label for="studentSelect">Student Name</label>
+                <select id="studentSelect"><option value="">— Loading… —</option></select>
+            </div>
+            <button class="view-btn" id="viewBtn" disabled>View Points</button>
+        </div>
+    </div>
+
+    <!-- Balance Hero -->
+    <div id="balanceCard" class="balance-card hidden fade-in">
+        <div class="balance-avatar" id="balanceAvatar">?</div>
+        <div class="balance-info">
+            <div class="balance-name" id="balanceName">—</div>
+            <div class="balance-classroom" id="balanceClassroom">—</div>
+        </div>
+        <div class="balance-amount-wrap">
+            <div class="balance-label">Current Balance</div>
+            <div class="balance-amount" id="balanceAmount">—</div>
+            <div class="balance-pts-label">points</div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div id="actionsRow" class="actions-row hidden fade-in">
+
+        <!-- Add Points -->
+        <div class="action-card add-card">
+            <div class="action-title">
+                <div class="icon-circle">+</div>
+                Add Points
+            </div>
+            <div class="action-input-wrap">
+                <label for="addAmount">Points to Add</label>
+                <input type="number" id="addAmount" min="1" placeholder="e.g. 50">
+            </div>
+            <div class="action-input-wrap">
+                <label for="addDate">Date Earned</label>
+                <input type="date" id="addDate">
+            </div>
+            <div class="action-input-wrap">
+                <label for="addNote">Note (optional)</label>
+                <input type="text" id="addNote" placeholder="e.g. Bonus reward">
+            </div>
+            <div>
+                <button class="action-btn add-btn" id="addBtn">+ Add Points</button>
+            </div>
+            <div id="addFeedback" class="action-feedback hidden"></div>
+        </div>
+
+        <!-- Subtract Points -->
+        <div class="action-card sub-card">
+            <div class="action-title">
+                <div class="icon-circle">−</div>
+                Spend Points
+            </div>
+            <div class="action-input-wrap">
+                <label for="subAmount">Points to Spend</label>
+                <input type="number" id="subAmount" min="1" placeholder="e.g. 25">
+            </div>
+            <div class="action-input-wrap">
+                <label for="subDate">Date Spent</label>
+                <input type="date" id="subDate">
+            </div>
+            <div class="spent-on-wrap" id="spentOnWrap">
+                <label for="spentOn">Spent on <span style="color:var(--accent)">*</span></label>
+                <textarea id="spentOn" placeholder="What did the student spend their points on?"></textarea>
+            </div>
+            <div>
+                <button class="action-btn sub-btn" id="subBtn">− Spend Points</button>
+            </div>
+            <div id="subFeedback" class="action-feedback hidden"></div>
+        </div>
+
+    </div>
+
+    <!-- Ledger -->
+    <div id="ledgerCard" class="ledger-card hidden fade-in">
+        <div class="ledger-header">
+            <h3>Transaction History</h3>
+            <span class="ledger-count" id="ledgerCount">0 entries</span>
+        </div>
+        <div id="ledgerContent">
+            <div class="empty-state">
+                
+                <p>No transactions yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt -->
+    <div id="promptState">
+        <div class="empty-state" style="margin-top:3rem;">
+            
+            <p style="font-size:1rem;font-weight:600;color:var(--primary);">Select a student above to view their Point Bank.</p>
+            <p style="font-size:0.85rem;margin-top:0.4rem;">Points are automatically added when daily forms are submitted.</p>
+        </div>
+    </div>
+
+</div><!-- /page-wrap -->
+
+<script>window.__TRACKER_MODE__="goals"</script><script src="demo-client.js"></script>
+<script>
+const SUPABASE_URL = 'demo://in-memory';
+const SUPABASE_ANON = 'demo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let studentsList = [];
+let currentStudent = null;
+let ledgerEntries  = [];
+let currentBalance = 0;
+
+function todayLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── Config cache (sessionStorage, 30-min TTL) ─────────────────
+async function fetchConfig() {
+    const KEY = 'php_st_config_sql_v1', TTL = 30 * 60 * 1000;
+    try {
+        const c = sessionStorage.getItem(KEY);
+        if (c) { const {ts,data} = JSON.parse(c); if (Date.now()-ts < TTL) return data; }
+    } catch(e) {}
+    const [s,c,st] = await Promise.all([
+        sb.from('staff').select('id,name').order('name'),
+        sb.from('classrooms').select('id,room_number').order('room_number'),
+        sb.from('students').select('id,classroom_id,name,active,use_pbis,use_points').eq('active',true).order('name'),
+    ]);
+    const data = { staff: s.data||[], classrooms: c.data||[], students: st.data||[] };
+    try { sessionStorage.setItem(KEY, JSON.stringify({ts:Date.now(),data})); } catch(e) {}
+    return data;
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('addDate').value = todayLocal();
+    document.getElementById('subDate').value = todayLocal();
+    await loadStudents();
+    document.getElementById('studentSelect').addEventListener('change', () => {
+        document.getElementById('viewBtn').disabled = !document.getElementById('studentSelect').value;
+    });
+    document.getElementById('viewBtn').addEventListener('click', loadPointBank);
+    document.getElementById('addBtn').addEventListener('click', handleAdd);
+    document.getElementById('subBtn').addEventListener('click', handleSubtract);
+    document.getElementById('subAmount').addEventListener('focus', () => {
+        document.getElementById('spentOnWrap').classList.remove('hidden');
+    });
+});
+
+async function loadStudents() {
+    try {
+        const cfg = await fetchConfig();
+        // Build classroom lookup: id → room_number
+        const classMap = {};
+        (cfg.classrooms||[]).forEach(c => { classMap[c.id] = c.room_number; });
+
+        studentsList = (cfg.students||[]).map(s => ({
+            id:        s.id,
+            name:      s.name,
+            classroom: classMap[s.classroom_id] || '—',
+            usePBIS:   s.use_pbis,
+            usePoints: s.use_points,
+        }));
+
+        const sel = document.getElementById('studentSelect');
+        sel.innerHTML = '<option value="">— Select a student —</option>';
+        studentsList.forEach((s, i) => {
+            const o = document.createElement('option');
+            o.value = i;
+            o.textContent = `${s.name}  (Room ${s.classroom})`;
+            sel.appendChild(o);
+        });
+    } catch(err) {
+        alert('Failed to load students: ' + err.message);
+    }
+}
+
+// ── Load Point Bank ───────────────────────────────────────────
+async function loadPointBank() {
+    const idx = document.getElementById('studentSelect').value;
+    if (idx === '') return;
+    currentStudent = studentsList[parseInt(idx)];
+
+    document.getElementById('promptState').classList.add('hidden');
+    document.getElementById('balanceCard').classList.add('hidden');
+    document.getElementById('actionsRow').classList.add('hidden');
+    document.getElementById('ledgerCard').classList.remove('hidden');
+    document.getElementById('ledgerContent').innerHTML = `<div class="spinner-wrap"><div class="spinner"></div> Loading transactions…</div>`;
+
+    try {
+        const { data, error } = await sb
+            .from('point_bank')
+            .select('id,date,points,description')
+            .eq('student_id', currentStudent.id)
+            .order('date', { ascending: false });
+
+        if (error) throw error;
+
+        ledgerEntries  = data || [];
+        currentBalance = ledgerEntries.reduce((sum, e) => sum + (parseFloat(e.points) || 0), 0);
+
+        renderBalanceCard();
+        renderLedger();
+
+        document.getElementById('balanceCard').classList.remove('hidden');
+        document.getElementById('actionsRow').classList.remove('hidden');
+        document.getElementById('ledgerCard').classList.remove('hidden');
+
+    } catch(err) {
+        document.getElementById('ledgerContent').innerHTML = `<div class="empty-state" style="color:var(--accent);">Failed to load: ${esc(err.message)}</div>`;
+    }
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderBalanceCard() {
+    const initials = currentStudent.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    document.getElementById('balanceAvatar').textContent    = initials;
+    document.getElementById('balanceName').textContent      = currentStudent.name;
+    document.getElementById('balanceClassroom').textContent = `Room ${currentStudent.classroom}`;
+    setBalanceDisplay(currentBalance);
+}
+
+function setBalanceDisplay(val) {
+    const el = document.getElementById('balanceAmount');
+    el.textContent = Math.max(0, Math.round(val)).toLocaleString();
+    el.style.color = val <= 0 ? 'rgba(255,255,255,0.4)' : 'var(--gold)';
+}
+
+function animateBalance(newVal) {
+    const el = document.getElementById('balanceAmount');
+    el.classList.remove('coin-pop'); void el.offsetWidth;
+    el.classList.add('coin-pop');
+    setBalanceDisplay(newVal);
+}
+
+function renderLedger() {
+    const content = document.getElementById('ledgerContent');
+    document.getElementById('ledgerCount').textContent = `${ledgerEntries.length} entr${ledgerEntries.length===1?'y':'ies'}`;
+
+    if (ledgerEntries.length === 0) {
+        content.innerHTML = `<div class="empty-state"><p>No transactions yet for <strong>${esc(currentStudent.name)}</strong>.</p><p style="font-size:0.82rem;margin-top:0.3rem;">Points will appear here after daily forms are submitted.</p></div>`;
+        return;
+    }
+
+    // Build running balance oldest→newest, display newest first
+    const sorted = [...ledgerEntries].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    let running = 0;
+    const withRunning = sorted.map(e => {
+        running += parseFloat(e.points) || 0;
+        return { ...e, running: Math.max(0, Math.round(running)) };
+    });
+    withRunning.reverse();
+
+    const rows = withRunning.map(e => {
+        const pts = parseFloat(e.points) || 0;
+        const isPos = pts >= 0;
+        const amtClass = isPos ? 'positive' : 'negative';
+        const amtText  = (isPos ? '+' : '') + Math.round(pts).toLocaleString();
+
+        let typeLabel, typeCls;
+        const desc = (e.description || '').toLowerCase();
+        if (pts < 0)                          { typeLabel='Spent';  typeCls='spent';  }
+        else if (desc.includes('daily paws')) { typeLabel='Earned'; typeCls='earned'; }
+        else                                  { typeLabel='Added';  typeCls='added';  }
+
+        const dateStr = e.date ? fmtDate(e.date) : '—';
+        const descTxt = e.description ? esc(e.description) : '—';
+
+        return `<tr>
+            <td class="ledger-date">${dateStr}</td>
+            <td><span class="ledger-type ${typeCls}">${typeLabel}</span></td>
+            <td><span class="ledger-amount ${amtClass}">${amtText}</span></td>
+            <td class="ledger-desc" title="${esc(e.description||'')}">${descTxt}</td>
+            <td class="ledger-running" style="color:${e.running>0?'var(--primary)':'var(--text-light)'};">${e.running.toLocaleString()}</td>
+        </tr>`;
+    }).join('');
+
+    content.innerHTML = `
+        <div class="ledger-scroll">
+            <table class="ledger-table">
+                <thead><tr>
+                    <th>Date</th><th>Type</th><th>Points</th><th>Description</th><th style="text-align:right;">Balance</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+}
+
+// ── Add Points ────────────────────────────────────────────────
+async function handleAdd() {
+    const amtRaw = document.getElementById('addAmount').value.trim();
+    const note   = document.getElementById('addNote').value.trim();
+    const fb     = document.getElementById('addFeedback');
+    const amt    = parseFloat(amtRaw);
+    const addDate = document.getElementById('addDate').value;
+
+    if (!amtRaw || isNaN(amt) || amt <= 0) { showFeedback(fb,'error','Please enter a positive number of points.'); return; }
+    if (!addDate) { showFeedback(fb,'error','Please choose the date the points were earned.'); return; }
+
+    const btn = document.getElementById('addBtn');
+    btn.disabled = true; btn.textContent = 'Adding…'; fb.className = 'action-feedback hidden';
+
+    try {
+        const { error } = await sb.from('point_bank').insert({
+            date:        addDate,
+            student_id:  currentStudent.id,
+            points:      amt,
+            description: note || 'Manual addition',
+        });
+        if (error) throw error;
+
+        ledgerEntries.push({ date: addDate, points: amt, description: note||'Manual addition' });
+        currentBalance += amt;
+        animateBalance(currentBalance);
+        renderLedger();
+        document.getElementById('addAmount').value = '';
+        document.getElementById('addNote').value   = '';
+        document.getElementById('addDate').value   = todayLocal();
+        showFeedback(fb, 'success', `+${Math.round(amt)} points added!`);
+    } catch(err) {
+        showFeedback(fb, 'error', '' + err.message);
+    } finally {
+        btn.disabled = false; btn.textContent = '+ Add Points';
+    }
+}
+
+// ── Spend Points ──────────────────────────────────────────────
+async function handleSubtract() {
+    const amtRaw  = document.getElementById('subAmount').value.trim();
+    const spentOn = document.getElementById('spentOn').value.trim();
+    const fb      = document.getElementById('subFeedback');
+    const amt     = parseFloat(amtRaw);
+    const subDate = document.getElementById('subDate').value;
+
+    if (!amtRaw || isNaN(amt) || amt <= 0) { showFeedback(fb,'error','Please enter a positive number of points.'); return; }
+    if (!subDate) { showFeedback(fb,'error','Please choose the date the points were spent.'); return; }
+    if (!spentOn) {
+        document.getElementById('spentOnWrap').classList.remove('hidden');
+        document.getElementById('spentOn').focus();
+        showFeedback(fb,'error','Please describe what was purchased.'); return;
+    }
+    if (amt > currentBalance) { showFeedback(fb,'error',`Not enough points. Balance is ${Math.round(currentBalance)}.`); return; }
+
+    const btn = document.getElementById('subBtn');
+    btn.disabled = true; btn.textContent = 'Processing…'; fb.className = 'action-feedback hidden';
+
+    try {
+        const { error } = await sb.from('point_bank').insert({
+            date:        subDate,
+            student_id:  currentStudent.id,
+            points:      -amt,
+            description: spentOn,
+        });
+        if (error) throw error;
+
+        ledgerEntries.push({ date: subDate, points: -amt, description: spentOn });
+        currentBalance -= amt;
+        animateBalance(currentBalance);
+        renderLedger();
+        document.getElementById('subAmount').value = '';
+        document.getElementById('spentOn').value   = '';
+        document.getElementById('subDate').value   = todayLocal();
+        showFeedback(fb, 'success', `−${Math.round(amt)} points spent on: ${spentOn}`);
+    } catch(err) {
+        showFeedback(fb, 'error', '' + err.message);
+    } finally {
+        btn.disabled = false; btn.textContent = '− Spend Points';
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function showFeedback(el, type, msg) {
+    el.textContent = msg; el.className = `action-feedback ${type}`;
+    setTimeout(() => { el.className = 'action-feedback hidden'; }, 4000);
+}
+function fmtDate(ds) {
+    if (!ds) return '—';
+    const d = new Date(ds + (ds.length===10 ? 'T12:00:00' : ''));
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+function esc(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

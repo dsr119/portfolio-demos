@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script src="../storage-shim.js"></script>
+<meta name="robots" content="noindex">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Roster — Demo District Student Behavior Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.__TRACKER_MODE__="goals"</script><script src="demo-client.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --primary:#2D5B7B;--primary-dark:#1e3a52;--secondary:#F4A259;
+            --accent:#E76F51;--success:#52B788;--success-dark:#40916C;
+            --bg:#F0F4F8;--surface:#FFFFFF;--surface-2:#F8F9FA;
+            --text:#212529;--text-light:#6C757D;--border:#DEE2E6;
+            --error:#DC3545;--shadow-sm:0 2px 8px rgba(0,0,0,0.07);
+            --shadow-md:0 4px 16px rgba(0,0,0,0.10);--radius:12px
+        }
+        body{font-family:'Public Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+        /* ── Topbar ── */
+        .topbar{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:sticky;top:0;z-index:100}
+        .topbar-left{display:flex;align-items:center;gap:1rem}
+        .topbar-logo{font-family:'Public Sans',sans-serif;font-size:1rem;font-weight:700;color:white}
+        .topbar-logo span{color:var(--secondary)}
+        .page-badge{background:rgba(82,183,136,0.22);border:1px solid rgba(82,183,136,0.4);color:#a8f0cc;font-family:'Public Sans',sans-serif;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:0.2rem 0.6rem;border-radius:20px}
+        .topbar-right{display:flex;gap:0.5rem}
+        .nav-link{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:0.4rem 1rem;border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.84rem;font-weight:600;cursor:pointer;text-decoration:none;transition:all 0.2s}
+        .nav-link:hover{background:rgba(255,255,255,0.2);color:white}
+
+        /* ── Layout ── */
+        .page-wrap{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 5rem}
+        .page-header{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:2rem}
+        .page-header h1{font-size:2rem;font-weight:700;color:var(--primary);letter-spacing:-0.02em}
+        .page-header .subtitle{color:var(--text-light);font-family:'Public Sans',sans-serif;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;margin-top:0.25rem}
+
+        /* ── Toolbar ── */
+        .toolbar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+        .search-wrap{position:relative;flex:1;min-width:200px}
+        .search-wrap input{width:100%;padding:0.65rem 1rem 0.65rem 2.5rem;border:2px solid var(--border);border-radius:10px;font-family:'Public Sans',sans-serif;font-size:0.95rem;background:var(--surface);transition:all 0.2s}
+        .search-wrap input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,91,123,0.1)}
+        .search-icon{position:absolute;left:0.8rem;top:50%;transform:translateY(-50%);color:var(--text-light);pointer-events:none;font-size:0.9rem}
+        .filter-select{padding:0.65rem 1rem;border:2px solid var(--border);border-radius:10px;font-family:'Public Sans',sans-serif;font-size:0.92rem;background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.2s}
+        .filter-select:focus{outline:none;border-color:var(--primary)}
+        .add-btn{padding:0.65rem 1.5rem;background:linear-gradient(135deg,var(--success),var(--success-dark));color:white;border:none;border-radius:10px;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.25s;box-shadow:0 2px 8px rgba(82,183,136,0.3);white-space:nowrap}
+        .add-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(82,183,136,0.4)}
+
+        /* ── Tabs ── */
+        .tabs{display:flex;gap:0;margin-bottom:1.75rem;border-bottom:2px solid var(--border)}
+        .tab-btn{padding:0.65rem 1.5rem;background:transparent;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:600;color:var(--text-light);cursor:pointer;transition:all 0.2s}
+        .tab-btn:hover{color:var(--primary)}
+        .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+        /* ── Staff ── */
+        .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+        .staff-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);border:2px solid var(--border);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;transition:all 0.2s}
+        .staff-card:hover{box-shadow:var(--shadow-md);border-color:rgba(45,91,123,0.2)}
+        .staff-avatar{width:40px;height:40px;background:linear-gradient(135deg,var(--secondary),#d4822a);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:white;font-family:'Public Sans',sans-serif;flex-shrink:0}
+        .staff-name{flex:1;font-weight:600;font-size:0.95rem;color:var(--text)}
+        .staff-actions{display:flex;gap:0.4rem}
+        .staff-edit-btn{padding:0.35rem 0.7rem;background:transparent;border:1.5px solid var(--primary);color:var(--primary);border-radius:6px;font-family:'Public Sans',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .staff-edit-btn:hover{background:var(--primary);color:white}
+        .staff-del-btn{padding:0.35rem 0.55rem;background:transparent;border:1.5px solid var(--border);color:var(--text-light);border-radius:6px;cursor:pointer;transition:all 0.2s;font-size:0.78rem}
+        .staff-del-btn:hover{border-color:var(--error);color:var(--error)}
+
+        /* ── Student Grid ── */
+        .student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.25rem}
+        .student-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow-sm);border:2px solid var(--border);overflow:hidden;transition:all 0.2s;display:flex;flex-direction:column}
+        .student-card:hover{box-shadow:var(--shadow-md);border-color:rgba(45,91,123,0.25);transform:translateY(-1px)}
+        .student-card.inactive{opacity:0.6}
+        .card-header{padding:1.25rem 1.5rem 1rem;display:flex;align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border)}
+        .card-avatar{width:46px;height:46px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;font-family:'Public Sans',sans-serif;flex-shrink:0}
+        .card-info{flex:1;min-width:0}
+        .card-name{font-size:1.05rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .card-room{font-size:0.8rem;color:var(--text-light);font-family:'Public Sans',sans-serif;margin-top:0.15rem}
+        .card-badges{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.5rem}
+        .badge{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:0.18rem 0.55rem;border-radius:20px;white-space:nowrap}
+        .badge.active{background:#D4EDDA;color:#1A6535}
+        .badge.inactive{background:#E9ECEF;color:#6C757D}
+        .badge.pbis{background:rgba(45,91,123,0.1);color:var(--primary)}
+        .badge.points{background:rgba(245,197,24,0.15);color:#856404}
+        .card-questions{padding:0.85rem 1.5rem;flex:1}
+        .card-q-label{font-size:0.68rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-light);margin-bottom:0.5rem;font-weight:700}
+        .card-q-list{display:flex;flex-direction:column;gap:0.3rem}
+        .card-q-item{font-size:0.82rem;color:var(--text);display:flex;gap:0.4rem;align-items:flex-start}
+        .card-q-num{color:var(--secondary);font-weight:700;font-family:'Public Sans',sans-serif;font-size:0.75rem;flex-shrink:0;margin-top:0.05rem}
+        .card-footer{padding:0.85rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:0.6rem;background:var(--surface-2)}
+        .card-edit-btn{flex:1;padding:0.5rem;background:transparent;border:1.5px solid var(--primary);color:var(--primary);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .card-edit-btn:hover{background:var(--primary);color:white}
+        .card-del-btn{padding:0.5rem 0.85rem;background:transparent;border:1.5px solid var(--border);color:var(--text-light);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.85rem;cursor:pointer;transition:all 0.2s}
+        .card-del-btn:hover{border-color:var(--error);color:var(--error)}
+
+        /* ── Empty / Loading ── */
+        .empty-state{text-align:center;padding:4rem 2rem;color:var(--text-light)}
+        .empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.4}
+        .spinner-wrap{display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:4rem;color:var(--text-light)}
+        .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* ── Modal ── */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;opacity:0;transition:opacity 0.25s;pointer-events:none}
+        .modal-overlay.open{opacity:1;pointer-events:all}
+        .modal{background:var(--surface);border-radius:20px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,0.25);transform:translateY(24px);transition:transform 0.3s;overflow:hidden}
+        .modal-overlay.open .modal{transform:translateY(0)}
+        .modal-header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between}
+        .modal-header h3{color:white;font-size:1.2rem;font-weight:700}
+        .modal-close{width:36px;height:36px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s}
+        .modal-close:hover{background:rgba(255,255,255,0.3)}
+        .modal-body{padding:2rem;overflow-y:auto;max-height:75vh}
+        .modal-section{margin-bottom:1.75rem;padding-bottom:1.75rem;border-bottom:1px solid var(--border)}
+        .modal-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+        .modal-section-title{font-size:0.8rem;font-family:'Public Sans',sans-serif;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light);margin-bottom:1rem;font-weight:700}
+        .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        @media(max-width:500px){.modal-row{grid-template-columns:1fr}}
+        .field{display:flex;flex-direction:column;gap:0.4rem}
+        .field label{font-size:0.88rem;font-weight:600;color:var(--text)}
+        .field label span.req{color:var(--error);margin-left:2px}
+        .field input,.field select{padding:0.65rem 0.9rem;border:2px solid var(--border);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.95rem;background:var(--surface);color:var(--text);transition:all 0.2s}
+        .field input:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,91,123,0.1)}
+
+        /* Toggle switches */
+        .toggle-row{display:flex;gap:1.5rem;flex-wrap:wrap}
+        .toggle-item{display:flex;align-items:center;gap:0.65rem;cursor:pointer}
+        .toggle-item input[type="checkbox"]{display:none}
+        .toggle-track{width:44px;height:24px;background:var(--border);border-radius:20px;position:relative;transition:background 0.2s;flex-shrink:0}
+        .toggle-track::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+        .toggle-item input:checked + .toggle-track{background:var(--success)}
+        .toggle-item input:checked + .toggle-track::after{transform:translateX(20px)}
+        .toggle-label{font-size:0.9rem;font-weight:600;color:var(--text)}
+
+        .tx-goals-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+        .tx-goal-field{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1rem}
+        .tx-goal-field label{display:block;font-family:'Public Sans',sans-serif;font-size:0.78rem;font-weight:700;color:var(--primary);margin-bottom:0.45rem;text-transform:uppercase;letter-spacing:0.05em}
+        .tx-goal-field input{width:100%;padding:0.65rem 0.85rem;border:2px solid var(--border);border-radius:8px;font-family:'Public Sans',sans-serif;font-size:0.9rem}
+        .tx-goal-field input:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 3px rgba(244,162,89,0.1)}
+        @media(max-width:620px){.tx-goals-list{grid-template-columns:1fr}}
+
+        .modal-footer{padding:1.25rem 2rem;background:var(--surface-2);border-top:1px solid var(--border);display:flex;gap:1rem;justify-content:flex-end;align-items:center}
+        .modal-cancel-btn{padding:0.7rem 1.5rem;background:transparent;border:2px solid var(--border);border-radius:10px;color:var(--text-light);font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+        .modal-cancel-btn:hover{border-color:var(--text-light);color:var(--text)}
+        .modal-save-btn{padding:0.7rem 1.75rem;background:linear-gradient(135deg,var(--success),var(--success-dark));border:none;border-radius:10px;color:white;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+        .modal-save-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(82,183,136,0.35)}
+        .modal-save-btn:disabled{background:var(--border);cursor:not-allowed;transform:none;box-shadow:none;color:var(--text-light)}
+        .modal-feedback{font-size:0.88rem;font-weight:600;padding:0.5rem 0.85rem;border-radius:8px}
+        .modal-feedback.success{background:#D4EDDA;color:#1A6535}
+        .modal-feedback.error{background:#F8D7DA;color:#842029}
+        .modal-feedback.hidden{display:none}
+
+        /* Confirm delete modal */
+        .confirm-modal{max-width:420px}
+        .confirm-body{padding:2rem;text-align:center}
+        .confirm-icon{font-size:2.5rem;margin-bottom:1rem}
+        .confirm-body h4{font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:0.5rem}
+        .confirm-body p{font-size:0.9rem;color:var(--text-light);line-height:1.5}
+        .confirm-footer{padding:1.25rem 2rem;background:var(--surface-2);border-top:1px solid var(--border);display:flex;gap:1rem;justify-content:center}
+        .del-confirm-btn{padding:0.7rem 1.75rem;background:linear-gradient(135deg,var(--error),#a01020);border:none;border-radius:10px;color:white;font-family:'Public Sans',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+        .del-confirm-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(220,53,69,0.35)}
+        .del-confirm-btn:disabled{background:var(--border);cursor:not-allowed;transform:none}
+
+        .hidden{display:none}
+        .fade-in{animation:fadeIn 0.25s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+    <link rel="stylesheet" href="assets/brand.css">
+    <link rel="icon" href="assets/logo.svg" type="image/png">
+</head>
+<body>
+<nav class="topbar">
+    <div class="topbar-left">
+        <a class="topbar-logo" href="intakeForm.html" aria-label="Demo District Student Behavior Tracker home">
+            <img src="assets/logo.svg" alt="Demo District">
+            <span class="brand-copy"><strong>Student Behavior Tracker</strong><small>Day Treatment Program</small></span>
+        </a>
+        <span class="page-badge">Students</span>
+    </div>
+    <div class="topbar-right">
+        <a href="admin.html" class="nav-link">Admin</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="pointbank.html" class="nav-link">Point Bank</a>
+        <a href="intakeForm.html" class="nav-link">Intake Form</a>
+    </div>
+</nav>
+
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <h1>Roster &amp; Staff</h1>
+            <div class="subtitle">Manage students, staff &amp; tracking settings</div>
+        </div>
+        <button class="add-btn" id="addBtn">+ Add Student</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="students">Students</button>
+        <button class="tab-btn" data-tab="staff">Staff</button>
+        <button class="tab-btn" data-tab="classrooms">Classrooms</button>
+    </div>
+
+    <!-- STUDENTS TAB -->
+    <div id="tabStudents">
+    <div class="toolbar">
+        <div class="search-wrap">
+            
+            <input type="text" id="searchInput" placeholder="Search by name or classroom…">
+        </div>
+        <select class="filter-select" id="filterClassroom">
+            <option value="">All Classrooms</option>
+        </select>
+        <select class="filter-select" id="filterStatus">
+            <option value="">All Students</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+        </select>
+    </div>
+
+    <div id="loadingState" class="spinner-wrap"><div class="spinner"></div> Loading students…</div>
+    <div id="studentGrid" class="student-grid hidden"></div>
+    <div id="emptyState" class="empty-state hidden">
+        
+        <p style="font-size:1rem;font-weight:600;color:var(--primary);">No students found.</p>
+        <p style="font-size:0.85rem;margin-top:0.4rem;">Try adjusting your filters or add a new student.</p>
+    </div>
+    </div><!-- /tabStudents -->
+
+    <!-- STAFF TAB -->
+    <div id="tabStaff" class="hidden">
+        <div id="staffGrid" class="staff-grid"></div>
+        <div id="staffEmpty" class="empty-state hidden">
+            
+            <p style="font-size:1rem;font-weight:600;color:var(--primary);">No staff found.</p>
+        </div>
+        <div id="staffLoading" class="spinner-wrap hidden"><div class="spinner"></div> Loading staff…</div>
+    </div>
+
+    <!-- CLASSROOMS TAB -->
+    <div id="tabClassrooms" class="hidden">
+        <div id="classroomGrid" class="staff-grid"></div>
+        <div id="classroomEmpty" class="empty-state hidden">
+            
+            <p style="font-size:1rem;font-weight:600;color:var(--primary);">No classrooms yet.</p>
+        </div>
+        <div id="classroomLoading" class="spinner-wrap hidden"><div class="spinner"></div> Loading classrooms…</div>
+    </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div id="modalOverlay" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add Student</h3>
+            <button class="modal-close" id="modalCloseBtn">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalFeedback" class="modal-feedback hidden"></div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">Basic Info</div>
+                <div class="modal-row">
+                    <div class="field">
+                        <label for="fieldName">Student Name <span class="req">*</span></label>
+                        <input type="text" id="fieldName" placeholder="Full name">
+                    </div>
+                    <div class="field">
+                        <label for="fieldClassroom">Classroom <span class="req">*</span></label>
+                        <select id="fieldClassroom">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">Settings</div>
+                <div class="toggle-row">
+                    <label class="toggle-item">
+                        <input type="checkbox" id="fieldActive" checked>
+                        <div class="toggle-track"></div>
+                        <span class="toggle-label">Active Student</span>
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" id="fieldPoints">
+                        <div class="toggle-track"></div>
+                        <span class="toggle-label">Use Points</span>
+                    </label>
+                    <label class="toggle-item">
+                        <input type="checkbox" id="fieldStepDay">
+                        <div class="toggle-track"></div>
+                        <span class="toggle-label">Use Step, Day</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">Tx Goals <span style="font-size:0.75rem;color:var(--text-light);text-transform:none;letter-spacing:0;">(two treatment goals are required)</span></div>
+                <div class="tx-goals-list">
+                    <div class="tx-goal-field"><label for="fieldTxGoal1">Tx Goal 1 Name <span class="req">*</span></label><input type="text" id="fieldTxGoal1" maxlength="500" placeholder="Enter the first treatment goal"></div>
+                    <div class="tx-goal-field"><label for="fieldTxGoal2">Tx Goal 2 Name <span class="req">*</span></label><input type="text" id="fieldTxGoal2" maxlength="500" placeholder="Enter the second treatment goal"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div id="modalFeedbackInline" class="modal-feedback hidden"></div>
+            <button type="button" class="modal-cancel-btn" id="modalCancelBtn">Cancel</button>
+            <button type="button" class="modal-save-btn" id="modalSaveBtn">Save Student</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirmOverlay" class="modal-overlay">
+    <div class="modal confirm-modal">
+        <div class="modal-header">
+            <h3>Delete Student</h3>
+            <button class="modal-close" id="confirmCloseBtn">✕</button>
+        </div>
+        <div class="confirm-body">
+            
+            <h4 id="confirmName">Delete this student?</h4>
+            <p>This will permanently remove <strong id="confirmNameSpan"></strong> from the roster. Their submission history and point bank records will remain in the database.</p>
+        </div>
+        <div class="confirm-footer">
+            <button type="button" class="modal-cancel-btn" id="confirmCancelBtn">Cancel</button>
+            <button type="button" class="del-confirm-btn" id="confirmDeleteBtn">Delete Student</button>
+        </div>
+    </div>
+</div>
+
+<!-- CLASSROOM MODAL -->
+<div id="classroomModalOverlay" class="modal-overlay">
+    <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+            <h3 id="classroomModalTitle">Add Classroom</h3>
+            <button class="modal-close" id="classroomModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="classroomModalFeedback" class="modal-feedback hidden"></div>
+            <div class="field">
+                <label for="classroomFieldNumber">Room Number <span class="req">*</span></label>
+                <input type="text" id="classroomFieldNumber" placeholder="e.g. 203" maxlength="20">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-cancel-btn" id="classroomModalCancel">Cancel</button>
+            <button type="button" class="modal-save-btn" id="classroomModalSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- STAFF MODAL -->
+<div id="staffModalOverlay" class="modal-overlay">
+    <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+            <h3 id="staffModalTitle">Add Staff</h3>
+            <button class="modal-close" id="staffModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div id="staffModalFeedback" class="modal-feedback hidden"></div>
+            <div class="field">
+                <label for="staffFieldName">Full Name <span class="req">*</span></label>
+                <input type="text" id="staffFieldName" placeholder="e.g. Jordan Example">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-cancel-btn" id="staffModalCancel">Cancel</button>
+            <button type="button" class="modal-save-btn" id="staffModalSave">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'demo://in-memory';
+const SUPABASE_ANON = 'demo';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allStudents = [], allStaff = [], classrooms = [];
+let editingId = null, deletingId = null;
+let editingStaffId = null, deletingStaffId = null;
+let editingClassroomId = null, allClassroomsTab = [];
+let activeTab = 'students';
+
+// ── Init ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+    await loadData();
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    // Add button — context-aware
+    document.getElementById('addBtn').addEventListener('click', () => {
+        if (activeTab === 'students')   openModal(null);
+        else if (activeTab === 'staff') openStaffModal(null);
+        else                            openClassroomModal(null);
+    });
+
+    // Student filters
+    document.getElementById('searchInput').addEventListener('input', renderGrid);
+    document.getElementById('filterClassroom').addEventListener('change', renderGrid);
+    document.getElementById('filterStatus').addEventListener('change', renderGrid);
+
+    // Student modal
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+    document.getElementById('modalSaveBtn').addEventListener('click', saveStudent);
+
+    // Confirm delete modal
+    document.getElementById('confirmCloseBtn').addEventListener('click', closeConfirm);
+    document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirm);
+    document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target === document.getElementById('confirmOverlay')) closeConfirm(); });
+    document.getElementById('confirmDeleteBtn').addEventListener('click', deleteStudent);
+
+    // Staff modal
+    document.getElementById('staffModalClose').addEventListener('click', closeStaffModal);
+    document.getElementById('staffModalCancel').addEventListener('click', closeStaffModal);
+    document.getElementById('staffModalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('staffModalOverlay')) closeStaffModal(); });
+    document.getElementById('staffModalSave').addEventListener('click', saveStaff);
+
+    // Classroom modal
+    document.getElementById('classroomModalClose').addEventListener('click', closeClassroomModal);
+    document.getElementById('classroomModalCancel').addEventListener('click', closeClassroomModal);
+    document.getElementById('classroomModalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('classroomModalOverlay')) closeClassroomModal(); });
+    document.getElementById('classroomModalSave').addEventListener('click', saveClassroom);
+});
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('tabStudents').classList.toggle('hidden', tab !== 'students');
+    document.getElementById('tabStaff').classList.toggle('hidden', tab !== 'staff');
+    document.getElementById('tabClassrooms').classList.toggle('hidden', tab !== 'classrooms');
+    document.getElementById('addBtn').textContent =
+        tab === 'students' ? '+ Add Student' :
+        tab === 'staff'    ? '+ Add Staff'   : '+ Add Classroom';
+    if (tab === 'staff'      && allStaff.length === 0)      loadStaff();
+    if (tab === 'classrooms' && allClassroomsTab.length === 0) loadClassroomsTab();
+}
+
+// ── Load Data ─────────────────────────────────────────────────
+async function loadData() {
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('studentGrid').classList.add('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    try {
+        const [sRes, cRes] = await Promise.all([
+            sb.from('students')
+              .select('id,classroom_id,name,active,use_pbis,use_points,use_step_day,tx_goal_1_name,tx_goal_2_name')
+              .order('name'),
+            sb.from('classrooms').select('id,room_number').order('room_number'),
+        ]);
+        if (sRes.error) throw sRes.error;
+        if (cRes.error) throw cRes.error;
+        allStudents = sRes.data || [];
+        classrooms  = cRes.data || [];
+        populateClassroomFilter();
+        populateClassroomSelect();
+        renderGrid();
+    } catch(err) {
+        document.getElementById('loadingState').innerHTML = `<p style="color:var(--error)">Failed to load: ${esc(err.message)}</p>`;
+        return;
+    }
+    document.getElementById('loadingState').classList.add('hidden');
+}
+
+async function loadStaff() {
+    document.getElementById('staffLoading').classList.remove('hidden');
+    document.getElementById('staffGrid').classList.add('hidden');
+    try {
+        const { data, error } = await sb.from('staff').select('id,name').order('name');
+        if (error) throw error;
+        allStaff = data || [];
+        renderStaffGrid();
+    } catch(err) {
+        alert('Failed to load staff: ' + err.message);
+    }
+    document.getElementById('staffLoading').classList.add('hidden');
+}
+
+function populateClassroomFilter() {
+    const sel = document.getElementById('filterClassroom');
+    sel.innerHTML = '<option value="">All Classrooms</option>';
+    classrooms.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = 'Room ' + c.room_number;
+        sel.appendChild(o);
+    });
+}
+
+function populateClassroomSelect() {
+    const sel = document.getElementById('fieldClassroom');
+    sel.innerHTML = '<option value="">— Select —</option>';
+    classrooms.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = 'Room ' + c.room_number;
+        sel.appendChild(o);
+    });
+}
+
+// ── Render Student Grid ───────────────────────────────────────
+function renderGrid() {
+    const search   = document.getElementById('searchInput').value.toLowerCase().trim();
+    const roomId   = document.getElementById('filterClassroom').value;
+    const status   = document.getElementById('filterStatus').value;
+    const classMap = {};
+    classrooms.forEach(c => { classMap[c.id] = c.room_number; });
+
+    let filtered = allStudents.filter(s => {
+        if (search && !s.name.toLowerCase().includes(search) && !(classMap[s.classroom_id]||'').includes(search)) return false;
+        if (roomId && String(s.classroom_id) !== String(roomId)) return false;
+        if (status === 'active'   && !s.active)  return false;
+        if (status === 'inactive' &&  s.active)  return false;
+        return true;
+    });
+
+    const grid = document.getElementById('studentGrid');
+    if (!filtered.length) {
+        grid.classList.add('hidden');
+        document.getElementById('emptyState').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('emptyState').classList.add('hidden');
+    grid.classList.remove('hidden');
+
+    grid.innerHTML = filtered.map(s => {
+        const room = classMap[s.classroom_id] || '—';
+        const initials = s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const goals = [s.tx_goal_1_name, s.tx_goal_2_name];
+        const qHtml = `<div class="card-questions"><div class="card-q-label">Tx Goals</div><div class="card-q-list">${goals.map((q,i)=>`<div class="card-q-item"><span class="card-q-num">${i+1}</span><span>${q?esc(q):'<em style="color:var(--text-light)">Not configured</em>'}</span></div>`).join('')}</div></div>`;
+        return `<div class="student-card fade-in ${s.active?'':'inactive'}">
+            <div class="card-header">
+                <div class="card-avatar">${initials}</div>
+                <div class="card-info">
+                    <div class="card-name" title="${esc(s.name)}">${esc(s.name)}</div>
+                    <div class="card-room">Room ${esc(room)}</div>
+                    <div class="card-badges">
+                        <span class="badge ${s.active?'active':'inactive'}">${s.active?'Active':'Inactive'}</span>
+                        <span class="badge pbis">PBIS</span>
+                        ${s.use_points?'<span class="badge points">Points</span>':''}
+                        ${s.use_step_day?'<span class="badge pbis">Step, Day</span>':''}
+                    </div>
+                </div>
+            </div>
+            ${qHtml}
+            <div class="card-footer">
+                <button class="card-edit-btn" data-id="${s.id}">Edit</button>
+                <button class="card-del-btn" data-id="${s.id}" data-name="${esc(s.name)}" title="Delete student">Delete</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.card-edit-btn').forEach(btn =>
+        btn.addEventListener('click', () => openModal(allStudents.find(s => s.id === +btn.dataset.id)))
+    );
+    grid.querySelectorAll('.card-del-btn').forEach(btn =>
+        btn.addEventListener('click', () => openConfirm(+btn.dataset.id, btn.dataset.name))
+    );
+}
+
+// ── Render Staff Grid ─────────────────────────────────────────
+function renderStaffGrid() {
+    const grid = document.getElementById('staffGrid');
+    const empty = document.getElementById('staffEmpty');
+    if (!allStaff.length) { grid.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden'); grid.classList.remove('hidden');
+    grid.innerHTML = allStaff.map(s => {
+        const initials = s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        return `<div class="staff-card fade-in">
+            <div class="staff-avatar">${initials}</div>
+            <div class="staff-name">${esc(s.name)}</div>
+            <div class="staff-actions">
+                <button class="staff-edit-btn" data-id="${s.id}">Edit</button>
+                <button class="staff-del-btn" data-id="${s.id}" data-name="${esc(s.name)}" title="Delete">Delete</button>
+            </div>
+        </div>`;
+    }).join('');
+    grid.querySelectorAll('.staff-edit-btn').forEach(btn =>
+        btn.addEventListener('click', () => openStaffModal(allStaff.find(s => s.id === +btn.dataset.id)))
+    );
+    grid.querySelectorAll('.staff-del-btn').forEach(btn =>
+        btn.addEventListener('click', () => {
+            if (confirm(`Delete "${btn.dataset.name}" from staff? This cannot be undone.`)) deleteStaff(+btn.dataset.id);
+        })
+    );
+}
+
+// ── Student Modal ─────────────────────────────────────────────
+function openModal(student) {
+    editingId = student ? student.id : null;
+    document.getElementById('modalTitle').textContent = student ? 'Edit Student' : 'Add Student';
+    document.getElementById('fieldName').value        = student?.name || '';
+    document.getElementById('fieldClassroom').value   = student?.classroom_id || '';
+    document.getElementById('fieldActive').checked    = student ? !!student.active : true;
+    document.getElementById('fieldPoints').checked    = !!student?.use_points;
+    document.getElementById('fieldStepDay').checked   = !!student?.use_step_day;
+    document.getElementById('fieldTxGoal1').value      = student?.tx_goal_1_name || '';
+    document.getElementById('fieldTxGoal2').value      = student?.tx_goal_2_name || '';
+    document.getElementById('modalFeedback').className = 'modal-feedback hidden';
+    document.getElementById('modalFeedbackInline').className = 'modal-feedback hidden';
+    document.getElementById('modalSaveBtn').disabled = false;
+    document.getElementById('modalSaveBtn').textContent = 'Save Student';
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('fieldName').focus(), 300);
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    editingId = null;
+}
+
+async function saveStudent() {
+    const name        = document.getElementById('fieldName').value.trim();
+    const classroomId = parseInt(document.getElementById('fieldClassroom').value);
+    const txGoal1     = document.getElementById('fieldTxGoal1').value.trim();
+    const txGoal2     = document.getElementById('fieldTxGoal2').value.trim();
+    const fb = document.getElementById('modalFeedbackInline');
+    if (!name)        { showFb(fb, 'error', 'Student name is required.'); return; }
+    if (!classroomId) { showFb(fb, 'error', 'Please select a classroom.'); return; }
+    if (!txGoal1 || !txGoal2) { showFb(fb, 'error', 'Both Tx Goal names are required.'); return; }
+    const btn = document.getElementById('modalSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fb.className = 'modal-feedback hidden';
+    const row = {
+        name, classroom_id: classroomId,
+        active:     document.getElementById('fieldActive').checked,
+        use_pbis:   true,
+        use_points: document.getElementById('fieldPoints').checked,
+        use_step_day: document.getElementById('fieldStepDay').checked,
+        tx_goal_1_name: txGoal1,
+        tx_goal_2_name: txGoal2,
+    };
+    try {
+        if (editingId) {
+            const { error } = await sb.from('students').update(row).eq('id', editingId);
+            if (error) throw error;
+            const idx = allStudents.findIndex(s => s.id === editingId);
+            if (idx !== -1) allStudents[idx] = { ...allStudents[idx], ...row };
+        } else {
+            const { data, error } = await sb.from('students').insert(row).select().single();
+            if (error) throw error;
+            allStudents.push(data);
+            allStudents.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        showFb(fb, 'success', editingId ? 'Student updated!' : 'Student added!');
+        renderGrid();
+        setTimeout(closeModal, 1000);
+    } catch(err) {
+        showFb(fb, 'error', '' + err.message);
+        btn.disabled = false; btn.textContent = 'Save Student';
+    }
+}
+
+// ── Delete Student ────────────────────────────────────────────
+function openConfirm(id, name) {
+    deletingId = id;
+    document.getElementById('confirmNameSpan').textContent = name;
+    document.getElementById('confirmDeleteBtn').disabled = false;
+    document.getElementById('confirmDeleteBtn').textContent = 'Delete Student';
+    document.getElementById('confirmOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    deletingId = null;
+}
+
+async function deleteStudent() {
+    if (!deletingId) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+        const { error } = await sb.from('students').delete().eq('id', deletingId);
+        if (error) throw error;
+        allStudents = allStudents.filter(s => s.id !== deletingId);
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        renderGrid();
+        closeConfirm();
+    } catch(err) {
+        btn.disabled = false; btn.textContent = 'Delete Student';
+        alert('Could not delete: ' + err.message);
+    }
+}
+
+// ── Staff Modal ───────────────────────────────────────────────
+function openStaffModal(staff) {
+    editingStaffId = staff ? staff.id : null;
+    document.getElementById('staffModalTitle').textContent = staff ? 'Edit Staff' : 'Add Staff';
+    document.getElementById('staffFieldName').value = staff?.name || '';
+    document.getElementById('staffModalFeedback').className = 'modal-feedback hidden';
+    document.getElementById('staffModalSave').disabled = false;
+    document.getElementById('staffModalSave').textContent = 'Save';
+    document.getElementById('staffModalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('staffFieldName').focus(), 300);
+}
+
+function closeStaffModal() {
+    document.getElementById('staffModalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    editingStaffId = null;
+}
+
+async function saveStaff() {
+    const name = document.getElementById('staffFieldName').value.trim();
+    const fb   = document.getElementById('staffModalFeedback');
+    if (!name) { showFb(fb, 'error', 'Name is required.'); return; }
+    const btn = document.getElementById('staffModalSave');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fb.className = 'modal-feedback hidden';
+    try {
+        if (editingStaffId) {
+            const { error } = await sb.from('staff').update({ name }).eq('id', editingStaffId);
+            if (error) throw error;
+            const idx = allStaff.findIndex(s => s.id === editingStaffId);
+            if (idx !== -1) allStaff[idx].name = name;
+        } else {
+            const { data, error } = await sb.from('staff').insert({ name }).select().single();
+            if (error) throw error;
+            allStaff.push(data);
+            allStaff.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        showFb(fb, 'success', editingStaffId ? 'Staff updated!' : 'Staff added!');
+        renderStaffGrid();
+        setTimeout(closeStaffModal, 1000);
+    } catch(err) {
+        showFb(fb, 'error', '' + err.message);
+        btn.disabled = false; btn.textContent = 'Save';
+    }
+}
+
+async function deleteStaff(id) {
+    try {
+        const { error } = await sb.from('staff').delete().eq('id', id);
+        if (error) throw error;
+        allStaff = allStaff.filter(s => s.id !== id);
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        renderStaffGrid();
+    } catch(err) {
+        alert('Could not delete: ' + err.message);
+    }
+}
+
+// ── Classroom Tab ─────────────────────────────────────────────
+async function loadClassroomsTab() {
+    document.getElementById('classroomLoading').classList.remove('hidden');
+    document.getElementById('classroomGrid').classList.add('hidden');
+    try {
+        const { data, error } = await sb.from('classrooms').select('id,room_number').order('room_number');
+        if (error) throw error;
+        allClassroomsTab = data || [];
+        // Also refresh the main classrooms array and repopulate dropdowns
+        classrooms = allClassroomsTab;
+        populateClassroomFilter();
+        populateClassroomSelect();
+        renderClassroomGrid();
+    } catch(err) { alert('Failed to load classrooms: ' + err.message); }
+    document.getElementById('classroomLoading').classList.add('hidden');
+}
+
+function renderClassroomGrid() {
+    const grid  = document.getElementById('classroomGrid');
+    const empty = document.getElementById('classroomEmpty');
+    if (!allClassroomsTab.length) { grid.classList.add('hidden'); empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden'); grid.classList.remove('hidden');
+    grid.innerHTML = allClassroomsTab.map(c => `
+        <div class="staff-card fade-in">
+            <div class="staff-avatar">Rm</div>
+            <div class="staff-name">Room ${esc(c.room_number)}</div>
+            <div class="staff-actions">
+                <button class="staff-edit-btn" data-id="${c.id}">Edit</button>
+                <button class="staff-del-btn" data-id="${c.id}" data-name="${esc(c.room_number)}" title="Delete">Delete</button>
+            </div>
+        </div>`).join('');
+    grid.querySelectorAll('.staff-edit-btn').forEach(btn =>
+        btn.addEventListener('click', () => openClassroomModal(allClassroomsTab.find(c => c.id === +btn.dataset.id)))
+    );
+    grid.querySelectorAll('.staff-del-btn').forEach(btn =>
+        btn.addEventListener('click', () => {
+            if (confirm(`Delete Room ${btn.dataset.name}? This cannot be undone. Make sure no students are assigned to this room first.`))
+                deleteClassroom(+btn.dataset.id);
+        })
+    );
+}
+
+function openClassroomModal(classroom) {
+    editingClassroomId = classroom ? classroom.id : null;
+    document.getElementById('classroomModalTitle').textContent = classroom ? 'Edit Classroom' : 'Add Classroom';
+    document.getElementById('classroomFieldNumber').value = classroom?.room_number || '';
+    document.getElementById('classroomModalFeedback').className = 'modal-feedback hidden';
+    document.getElementById('classroomModalSave').disabled = false;
+    document.getElementById('classroomModalSave').textContent = 'Save';
+    document.getElementById('classroomModalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('classroomFieldNumber').focus(), 300);
+}
+
+function closeClassroomModal() {
+    document.getElementById('classroomModalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    editingClassroomId = null;
+}
+
+async function saveClassroom() {
+    const room_number = document.getElementById('classroomFieldNumber').value.trim();
+    const fb  = document.getElementById('classroomModalFeedback');
+    if (!room_number) { showFb(fb, 'error', 'Room number is required.'); return; }
+    const btn = document.getElementById('classroomModalSave');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    fb.className = 'modal-feedback hidden';
+    try {
+        if (editingClassroomId) {
+            const { error } = await sb.from('classrooms').update({ room_number }).eq('id', editingClassroomId);
+            if (error) throw error;
+            const idx = allClassroomsTab.findIndex(c => c.id === editingClassroomId);
+            if (idx !== -1) allClassroomsTab[idx].room_number = room_number;
+        } else {
+            const { data, error } = await sb.from('classrooms').insert({ room_number }).select().single();
+            if (error) throw error;
+            allClassroomsTab.push(data);
+            allClassroomsTab.sort((a, b) => a.room_number.localeCompare(b.room_number, undefined, { numeric: true }));
+        }
+        classrooms = [...allClassroomsTab];
+        populateClassroomFilter();
+        populateClassroomSelect();
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        showFb(fb, 'success', editingClassroomId ? 'Classroom updated!' : 'Classroom added!');
+        renderClassroomGrid();
+        setTimeout(closeClassroomModal, 1000);
+    } catch(err) {
+        showFb(fb, 'error', '' + err.message);
+        btn.disabled = false; btn.textContent = 'Save';
+    }
+}
+
+async function deleteClassroom(id) {
+    try {
+        const { error } = await sb.from('classrooms').delete().eq('id', id);
+        if (error) throw error;
+        allClassroomsTab = allClassroomsTab.filter(c => c.id !== id);
+        classrooms = [...allClassroomsTab];
+        populateClassroomFilter();
+        populateClassroomSelect();
+        try { sessionStorage.removeItem('php_st_config_sql_v2'); } catch(e) {}
+        renderClassroomGrid();
+    } catch(err) {
+        alert('Could not delete: ' + err.message);
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function showFb(el, type, msg) {
+    el.textContent = msg; el.className = `modal-feedback ${type}`;
+}
+function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+</script>
+</body>
+</html>
