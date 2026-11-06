@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not found</title>
+  <script>
+    // The spec sheet demo is a single-page app: send its deep links back to it.
+    (function () {
+      var m = location.pathname.match(/^(.*\/spec-sheets\/)(.+)$/);
+      if (m) location.replace(m[1] + "?p=" + encodeURIComponent(m[2] + location.search) + location.hash);
+    })();
+  </script>
+  <style>body{font:16px/1.5 system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 16px}</style>
+</head>
+<body>
+  <h1>Page not found</h1>
+  <p><a href="/portfolio-demos/">See all demos</a></p>
+</body>
+</html>

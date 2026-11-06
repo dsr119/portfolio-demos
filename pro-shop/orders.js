@@ -5,7 +5,7 @@
 // its own heading, regardless of which quarter is selected. Changing the
 // quarter filter must never hide outstanding work.
 
-const LOCATIONS = ["", "Valley", "South Side", "Both"];
+const LOCATIONS = ["", "Westside", "Eastside", "Both"];
 
 // How an order reached the shop. The stored values are the ones the intakes
 // write -- apps-script/form-to-supabase.gs sends 'google_form', the embedded

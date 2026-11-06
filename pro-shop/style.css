@@ -366,7 +366,7 @@ tbody tr.pending:hover { filter: brightness(.98); }
 .appt .t { font-weight: 600; }
 
 /* Location at a glance -- the shop runs two houses. */
-.appt.valley { border-left-color: var(--accent); background: var(--accent-soft); }
+.appt.westside { border-left-color: var(--accent); background: var(--accent-soft); }
 .appt.south  { border-left-color: var(--warn);   background: var(--warn-soft); }
 
 .appt.done { opacity: .55; }
@@ -391,7 +391,7 @@ tbody tr.pending:hover { filter: brightness(.98); }
   border-left: 3px solid;
 }
 
-.swatch.valley { border-left-color: var(--accent); background: var(--accent-soft); }
+.swatch.westside { border-left-color: var(--accent); background: var(--accent-soft); }
 .swatch.south  { border-left-color: var(--warn);   background: var(--warn-soft); }
 
 /* ---------- new order form ---------- */
@@ -970,7 +970,7 @@ select.assign:disabled { opacity: .5; }
 
 /* Plug work state on a ticket card. */
 .badge.plug            { background: #fff7e6; color: #8a5a00; }
-.badge.plug-at_keiths  { background: #ede9fe; color: #6d28d9; }
+.badge.plug-at_bench  { background: #ede9fe; color: #6d28d9; }
 .badge.plug-plugged    { background: var(--ok-soft); color: var(--ok); }
 .tmeta .booked { color: var(--accent); font-weight: 600; }
 .tfoot button { font-size: 12.5px; padding: 4px 9px; }

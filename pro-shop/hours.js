@@ -18,11 +18,10 @@ const HOURS_TEST_MODE = false;
 const HOURS_DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 
 // Matched on a fragment of the location name rather than the whole string --
-// the same way staff names are matched elsewhere. Renaming "Valley Bowling
-// Lanes" in the table does not have to mean editing this.
+// the same way staff names are matched elsewhere. Renaming "Westside//  Lanes" in the table does not have to mean editing this.
 const HOURS_LOCATIONS = [
-  { key: "idle",   title: "Idle Hours South", match: "idle"   },
-  { key: "valley", title: "Valley Lanes",     match: "valley" },
+  { key: "eastside",   title: "Eastside Lanes", match: "eastside"   },
+  { key: "westside", title: "Westside Lanes",     match: "westside" },
 ];
 
 const HOURS_FIELDS = ["open1", "close1", "note1", "open2", "close2", "note2"];
@@ -30,7 +29,7 @@ const HOURS_FIELDS = ["open1", "close1", "note1", "open2", "close2", "note2"];
 const DONE_KEY = "proshop.hoursConfirmedWeek";
 const SKIP_KEY = "proshop.hoursDismissedWeek";
 
-// { this: {monday, idle:[…], valley:[…]}, next: {…} }
+// { this: {monday, eastside:[…], westside:[…]}, next: {…} }
 let hoursWeeks = null;
 let hoursTab = "this";
 let hoursSaved = false;
@@ -76,7 +75,7 @@ function missingHours(history, monday) {
   for (const loc of HOURS_LOCATIONS) {
     const rows = history.filter(r => (r.location || "").toLowerCase().includes(loc.match));
     const location = [...rows].sort((a, b) => b.date.localeCompare(a.date))[0]?.location
-      || (loc.key === "valley" ? "Valley Bowling Lanes" : loc.title);
+      || (loc.key === "westside" ? "Westside Lanes" : loc.title);
     for (let i = 0; i < 14; i++) {
       const date = isoOf(addDays(monday, i));
       const day = HOURS_DAYS[i % 7];

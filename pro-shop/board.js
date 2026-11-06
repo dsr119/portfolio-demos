@@ -34,7 +34,7 @@ const num = (key, fallback, min, max) => {
 
 // The house: the URL wins (each Pi opens its own URL), then whatever was last
 // picked in the header on this computer, then both.
-const LOCATIONS = ["Valley", "South Side", ""];
+const LOCATIONS = ["Westside", "Eastside", ""];
 const LOC_KEY = "board.location";
 function pickLocation() {
   if (params.has("location")) return params.get("location") || "";
@@ -228,8 +228,8 @@ function allItems() {
 }
 
 // Does this belong on the screen in front of you? One rule for appointments,
-// orders and tickets alike: a board hung in the Valley has no business showing
-// a ticket about the South Side building. Anything without a location, and
+// orders and tickets alike: a board hung in the Westside has no business showing
+// a ticket about the Eastside building. Anything without a location, and
 // anything marked "Both", belongs to whichever house is on screen -- an
 // unlabelled row is far more likely to be an oversight than a deliberate
 // statement that it happened somewhere else.
@@ -583,8 +583,8 @@ function drawHeader() {
   for (const b of $("houses").querySelectorAll("button")) {
     const on = b.dataset.loc === CFG.location;
     b.className = on
-      ? "on" + (CFG.location === "Valley" ? " valley"
-                : CFG.location === "South Side" ? " south" : "")
+      ? "on" + (CFG.location === "Westside" ? " westside"
+                : CFG.location === "Eastside" ? " south" : "")
       : "";
   }
 

@@ -26,13 +26,13 @@
   Tuning, all optional, via the query string:
 
     ?days=7          how far ahead "coming up" reaches   (default 7)
-    ?location=Valley limit to one house   (default: the last house picked
+    ?location=Westside limit to one house   (default: the last house picked
                                           in the header on this computer, else both)
 
   The shop runs one board per house, so each Pi opens its own URL:
 
-    board.html?location=Valley
-    board.html?location=South%20Side
+    board.html?location=Westside
+    board.html?location=Eastside
 
   The house is named in the header, because two identical-looking dark screens
   in two buildings is exactly how someone ends up reading the wrong one.
@@ -51,8 +51,8 @@
     <!-- Which house this screen shows. Click to switch; the choice is
          remembered on this computer. A ?location= in the URL wins. -->
     <span class="houses" id="houses">
-      <button type="button" data-loc="Valley">Valley</button>
-      <button type="button" data-loc="South Side">South</button>
+      <button type="button" data-loc="Westside">Westside</button>
+      <button type="button" data-loc="Eastside">Eastside</button>
       <button type="button" data-loc="">Both</button>
     </span>
     <span class="stale" id="stale"></span>

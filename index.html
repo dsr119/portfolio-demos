@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Demos · Douglas Smith</title>
+  <meta name="description" content="Clickable demos of web apps built by Douglas Smith, running on made-up sample data.">
+  <style>
+    :root { --ink: #16202a; --muted: #5b6875; --line: #dfe4ea; --bg: #f5f7f9; --card: #fff; --accent: #1f4e79; --chip: #e8eef5; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink: #e8edf2; --muted: #9aa7b4; --line: #2b3640; --bg: #11171d; --card: #18212a; --accent: #7fb0e0; --chip: #22303d; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 980px; margin: 0 auto; padding: 56px 16px 64px; }
+    header h1 { font-size: 34px; line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
+    header p { margin: 0; color: var(--muted); max-width: 62ch; }
+    .note { margin-top: 18px; display: inline-block; font-size: 14px; color: var(--muted); border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; margin-top: 36px; }
+    a.card { display: flex; flex-direction: column; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+    a.card:hover, a.card:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+    .kicker { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    .card h2 { margin: 0; font-size: 19px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+    .tags span { background: var(--chip); border-radius: 999px; padding: 2px 9px; font-size: 12.5px; font-weight: 500; }
+    .open { font-size: 14px; font-weight: 600; color: var(--accent); }
+    footer { margin-top: 44px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Project demos</h1>
+    <p>Clickable versions of web apps I've built for real businesses and leagues. Each one runs the app's own interface and logic in your browser.</p>
+    <span class="note">Every name, number and score here is made up. Nothing connects to a live system, and changes reset when you refresh.</span>
+  </header>
+
+  <section class="grid" aria-label="Demos">
+    <a class="card" href="pro-shop/">
+      <span class="kicker">Retail operations</span>
+      <h2>Pro Shop Order Book</h2>
+      <p>Replaced a 10-year Excel order book: orders, the drilling queue, appointments, staff tickets, and a wall-mounted day board.</p>
+      <span class="open">Open demo →</span>
+      <div class="tags"><span>JavaScript</span><span>PostgreSQL / Supabase</span><span>REST</span><span>GitHub Actions</span></div>
+    </a>
+    <a class="card" href="spec-sheets/">
+      <span class="kicker">Customer records</span>
+      <h2>Fitting Spec Sheets</h2>
+      <p>Stores and revises bowling-ball fitting measurements on a drawn spec sheet, with full revision history and a ball-owner finder.</p>
+      <span class="open">Open demo →</span>
+      <div class="tags"><span>React</span><span>TypeScript</span><span>Vite</span><span>Row-level security</span><span>Playwright</span></div>
+    </a>
+    <a class="card" href="connect-team/">
+      <span class="kicker">Staff app · freelance</span>
+      <h2>Connect Team</h2>
+      <p>Phone-first staff app for a therapy practice: time clock, approvals, chat, time off, and payroll export. Switch between staff and admin views.</p>
+      <span class="open">Open demo →</span>
+      <div class="tags"><span>Next.js</span><span>TypeScript</span><span>Prisma</span><span>Tailwind CSS</span><span>RBAC</span></div>
+    </a>
+    <a class="card" href="league-forecast/">
+      <span class="kicker">Analytics</span>
+      <h2>Scratch League Forecast</h2>
+      <p>Monte Carlo simulation of an 18-team bowling season: standings, playoff odds, player ratings, and stat leaders.</p>
+      <span class="open">Open demo →</span>
+      <div class="tags"><span>JavaScript</span><span>Web Workers</span><span>Statistics</span><span>CSV / XLSX import</span></div>
+    </a>
+    <a class="card" href="monday-league/">
+      <span class="kicker">Analytics</span>
+      <h2>Handicap League Simulator</h2>
+      <p>Handicap scoring engine and season simulator for a 20-team league, with a lineup planner and a build-a-team what-if tool.</p>
+      <span class="open">Open demo →</span>
+      <div class="tags"><span>JavaScript</span><span>Simulation</span><span>Data validation</span></div>
+    </a>
+  </section>
+
+  <footer>Douglas Smith · smithjrdoug@gmail.com</footer>
+</main>
+</body>
+</html>

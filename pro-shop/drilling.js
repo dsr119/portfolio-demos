@@ -721,7 +721,7 @@ function renderDayList() {
     row.append(t, who, svc);
     if (a.location) {
       const loc = document.createElement("span");
-      loc.className = "loc" + (a.location === "South Side" ? " south" : "");
+      loc.className = "loc" + (a.location === "Eastside" ? " south" : "");
       loc.textContent = a.location;
       row.appendChild(loc);
     }

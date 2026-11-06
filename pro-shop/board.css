@@ -20,7 +20,7 @@
   --ok:      #3fb950;
   --warn:    #d29922;
   --danger:  #f85149;
-  --valley:  #58a6ff;
+  --westside:  #58a6ff;
   --south:   #bc8cff;
 }
 
@@ -101,7 +101,7 @@ body { user-select: none; cursor: none; }
   opacity: 1;
 }
 
-.houses button.on.valley { color: var(--valley); border-color: var(--valley); }
+.houses button.on.westside { color: var(--westside); border-color: var(--westside); }
 .houses button.on.south  { color: var(--south);  border-color: var(--south); }
 
 .top .clock {

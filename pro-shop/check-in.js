@@ -59,7 +59,7 @@
       info.append(heading);
       const line = (text, cls = '') => { const el = document.createElement('p'); el.textContent = text; el.className = cls; info.append(el); };
       line(row.is_stock ? 'Shop stock' : row.customer_name);
-      line('To: ' + receiving.destination(row).replace('South Side', 'Southside'), 'destination');
+      line('To: ' + receiving.destination(row).replace('Eastside', 'Southside'), 'destination');
       line(['Ordered ' + row.shop_order_date, row.supplier, row.supplier_order_no ? 'Order #' + row.supplier_order_no : '', row.invoice_no ? 'Invoice #' + row.invoice_no : ''].filter(Boolean).join(' · '), 'meta');
       if (row.checked_in_at) line('Checked in ' + new Date(row.checked_in_at).toLocaleString(), 'meta');
       const actions = document.createElement('div'); actions.className = 'checkin-actions';

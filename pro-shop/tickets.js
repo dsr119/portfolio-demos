@@ -27,7 +27,7 @@ let TICKET_APPTS = {};
 // Plug work moves through three states, one button press each.
 const PLUG_STEPS = [
   { key: "prepped",   label: "Prepped" },
-  { key: "at_keiths", label: "At the bench" },
+  { key: "at_bench", label: "At the bench" },
   { key: "plugged",   label: "Plugged in shop" },
 ];
 const PLUG_LABEL = Object.fromEntries(PLUG_STEPS.map((p) => [p.key, p.label]));
@@ -613,7 +613,7 @@ function renderDayList() {
     row.append(tm, who, svc);
     if (a.location) {
       const loc = document.createElement("span");
-      loc.className = "loc" + (a.location === "South Side" ? " south" : "");
+      loc.className = "loc" + (a.location === "Eastside" ? " south" : "");
       loc.textContent = a.location;
       row.appendChild(loc);
     }

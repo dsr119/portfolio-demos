@@ -176,8 +176,8 @@ function initials(name) {
 function apptChip(a) {
   const el = document.createElement("div");
   el.className = "appt";
-  if (a.location === "Valley") el.classList.add("valley");
-  else if (a.location === "South Side") el.classList.add("south");
+  if (a.location === "Westside") el.classList.add("westside");
+  else if (a.location === "Eastside") el.classList.add("south");
   if (a.completed) el.classList.add("done");
 
   if (!a.paid && !a.completed) el.classList.add("unpaid");

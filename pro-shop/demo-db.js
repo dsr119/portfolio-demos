@@ -30,7 +30,7 @@
   const OTHER = ["Dexter SST 8 Pro shoes", "Storm 3-ball roller bag", "Vise thumb inserts (10)",
                  "Ebonite wrist positioner", "Brunswick ball towel", "Vise grip tape"];
   const SUPPLIERS = ["Ace Mitchell", "Storm direct", "Brunswick direct", "Vise"];
-  const LOCS = ["Valley", "South Side"];
+  const LOCS = ["Westside", "Eastside"];
 
   // Names are obviously fake; phones use the reserved 555-0100..0199 range.
   const people = [];
@@ -138,7 +138,7 @@
   const monday = day(-((today.getDay() + 6) % 7));
   for (let w = -1; w < 2; w++) for (const location of LOCS) DAYS.forEach((dname, i) => {
     const d = new Date(monday); d.setDate(d.getDate() + w * 7 + i);
-    const closed = (location === "South Side" && i === 0) || i === 6 && location === "Valley";
+    const closed = (location === "Eastside" && i === 0) || i === 6 && location === "Westside";
     hours.push({ id: uid(), created_at: stamp(-30), updated_at: stamp(-30), location, day: dname,
                  date: iso(d), day_index: i, open1: closed ? null : (i >= 5 ? "12:00 PM" : "4:00 PM"),
                  close1: closed ? null : "9:00 PM", note1: null, open2: null, close2: null, note2: null });

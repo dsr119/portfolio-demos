@@ -43,7 +43,7 @@ function exportLine(order) {
 }
 
 function exportText(orders, location) {
-  const title = `Not drilled or scheduled — ${location === 'South Side' ? 'Southside' : location}`;
+  const title = `Not drilled or scheduled — ${location === 'Eastside' ? 'Southside' : location}`;
   return [title, '', ...orders.map(o => `• ${exportLine(o)}${location === 'Both' ? ` (${exportLocation(o)})` : ''}`)].join('\n');
 }
 
@@ -83,7 +83,7 @@ async function openDrillingExport() {
   exportRemoved = new Set();
   exportOrders = [];
   exportReady = false;
-  $('export_location').value = ['Valley', 'South Side'].includes($('location').value) ? $('location').value : 'Both';
+  $('export_location').value = ['Westside', 'Eastside'].includes($('location').value) ? $('location').value : 'Both';
   $('export_status').textContent = 'Loading orders and appointments…';
   $('export_notice').textContent = '';
   renderExport();
