@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Connect Team (demo)</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <style>:root { --bar: 40px } @media (max-width: 640px) { :root { --bar: 64px } }</style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-900 antialiased">
+  <div role="note" class="sticky top-0 z-30 flex h-[var(--bar)] flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-300 bg-amber-50 px-3 text-center text-[13px] font-semibold text-amber-900">
+    <span>Demo with made-up sample data. Changes reset on refresh.</span>
+    <span class="flex items-center gap-1">View as
+      <button data-act="role" data-role="STAFF" aria-pressed="true" class="rounded-md border border-amber-300 px-2 py-0.5 aria-pressed:bg-amber-200">Staff</button>
+      <button data-act="role" data-role="ADMIN" aria-pressed="false" class="rounded-md border border-amber-300 px-2 py-0.5 aria-pressed:bg-amber-200">Admin</button>
+      <button data-act="role" data-role="OWNER" aria-pressed="false" class="rounded-md border border-amber-300 px-2 py-0.5 aria-pressed:bg-amber-200">Owner</button>
+    </span>
+    <a href="../" class="underline">All demos</a>
+  </div>
+  <div id="app"></div>
+  <script src="app.js"></script>
+</body>
+</html>
