@@ -7,7 +7,7 @@ Clickable demos of web apps, served with GitHub Pages:
 | --- | --- |
 | `pro-shop/` | Pro shop order book: orders, drilling queue, appointments, tickets, day board |
 | `spec-sheets/` | Fitting spec sheets with revision history (React + TypeScript build) |
-| `connect-team/` | Staff time clock, approvals, chat and payroll export, with a staff/admin/owner switch |
+| `tendwell/` | Staff time clock, approvals, chat and payroll export, with a staff/admin/owner switch |
 | `league-forecast/` | Scratch league season forecast (Monte Carlo) |
 | `monday-league/` | Handicap league simulator, lineup planner and build-a-team tool |
 | `behavior-tracker/` | School day-treatment program tracker: attendance, behavior points, treatment goals |

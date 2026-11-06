@@ -1,4 +1,4 @@
-// Connect Team demo: the app's screens rebuilt as a small single-page app.
+// Tendwell demo: the app's screens rebuilt as a small single-page app.
 // Same layout and classes as the real Next.js app; data is made up and lives
 // in memory in this file. Nothing is sent anywhere. Refreshing starts over.
 
@@ -162,12 +162,12 @@
     const signOut = `<button data-act="signout" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">${icon("logout")}Sign out</button>`;
     return `
       <aside class="fixed inset-y-0 left-0 top-[var(--bar)] hidden w-60 flex-col border-r border-slate-200 bg-white p-4 md:flex">
-        <div class="mb-6 flex items-center gap-2 px-2"><img src="icon.svg" alt="" class="h-8 w-8"><span class="text-lg font-semibold text-brand-700">Connect Team</span></div>
+        <div class="mb-6 flex items-center gap-2 px-2"><img src="icon.svg" alt="" class="h-8 w-8"><span class="text-lg font-semibold text-brand-700">Tendwell</span></div>
         <nav class="flex flex-1 flex-col gap-1 overflow-y-auto">${main.map(link).join("")}${section("More", more)}${section("Admin", admin)}</nav>
         <div class="border-t border-slate-200 pt-3"><div class="truncate px-3 pb-2 text-sm text-slate-500">${esc(me.name)}</div>${signOut}</div>
       </aside>
       <header class="sticky top-[var(--bar)] z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
-        <span class="flex items-center gap-2 font-semibold text-brand-700"><img src="icon.svg" alt="" class="h-7 w-7">Connect Team</span>
+        <span class="flex items-center gap-2 font-semibold text-brand-700"><img src="icon.svg" alt="" class="h-7 w-7">Tendwell</span>
         <button data-act="menu" aria-label="Open menu" class="relative rounded-lg p-1 text-slate-600">${icon("menu", "h-6 w-6")}${pending ? '<span class="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-rose-600"></span>' : ""}</button>
       </header>
       <div id="drawer" hidden class="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true">
